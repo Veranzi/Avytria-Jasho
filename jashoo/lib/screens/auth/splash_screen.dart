@@ -20,7 +20,7 @@ class _SplashScreenState extends State<SplashScreen> {
 
   Future<void> _bootstrap() async {
     // brief splash delay
-    await Future<void>.delayed(const Duration(milliseconds: 800));
+    await Future<void>.delayed(const Duration(milliseconds: 1500));
     try {
       final auth = Provider.of<app_auth.AuthProvider>(context, listen: false);
       await auth.initialize();
@@ -28,11 +28,11 @@ class _SplashScreenState extends State<SplashScreen> {
       if (auth.isLoggedIn) {
         Navigator.of(context).pushReplacementNamed('/dashboard');
       } else {
-        Navigator.of(context).pushReplacementNamed('/login');
+        Navigator.of(context).pushReplacementNamed('/welcome');
       }
     } catch (_) {
       if (!mounted) return;
-      Navigator.of(context).pushReplacementNamed('/login');
+      Navigator.of(context).pushReplacementNamed('/welcome');
     }
   }
 

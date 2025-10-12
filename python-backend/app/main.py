@@ -4,6 +4,29 @@ from fastapi.middleware.gzip import GZipMiddleware
 from starlette.middleware.sessions import SessionMiddleware
 from .config import settings
 from fastapi.staticfiles import StaticFiles
+import firebase_admin
+from firebase_admin import credentials
+import os
+
+# Initialize Firebase Admin SDK (if not already initialized)
+if not firebase_admin._apps:
+    try:
+        # Try to load from ../secrets/service-account.json (relative to python-backend folder)
+        base_dir = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+        cred_path = os.path.join(base_dir, 'secrets', 'service-account.json')
+        
+        if os.path.exists(cred_path):
+            cred = credentials.Certificate(cred_path)
+            firebase_admin.initialize_app(cred)
+            print(f"✅ Firebase initialized with service account from: {cred_path}")
+        else:
+            # Try default credentials
+            firebase_admin.initialize_app()
+            print("✅ Firebase initialized with default credentials")
+    except Exception as e:
+        print(f"⚠️  Firebase not initialized: {e}")
+        print(f"   Expected path: {cred_path if 'cred_path' in locals() else 'secrets/service-account.json'}")
+        print("   App will run with limited functionality.")
 
 
 def create_app() -> FastAPI:
@@ -20,7 +43,10 @@ def create_app() -> FastAPI:
     app.add_middleware(SessionMiddleware, secret_key=settings.jwt_secret)
 
     # Routers will be included below to match Flutter ApiService endpoints
-    from .routers import auth, user, wallet, ai, heatmap, chatbot, credit_score, gamification, savings, profile_image, cybersecurity
+    from .routers import (
+        auth, user, wallet, ai, heatmap, chatbot, credit_score, gamification, 
+        savings, profile_image, cybersecurity, fraud, ratings, notifications, jobs, ussd
+    )
 
     app.include_router(auth.router, prefix=settings.api_prefix + "/auth", tags=["auth"])
     app.include_router(user.router, prefix=settings.api_prefix + "/user", tags=["user"])
@@ -33,6 +59,13 @@ def create_app() -> FastAPI:
     app.include_router(savings.router, prefix=settings.api_prefix + "/savings", tags=["savings"])
     app.include_router(profile_image.router, prefix=settings.api_prefix + "/profile-image", tags=["profile-image"])
     app.include_router(cybersecurity.router, prefix=settings.api_prefix + "/cybersecurity", tags=["cybersecurity"])
+    
+    # NEW ROUTES - ALL FEATURES IMPLEMENTED
+    app.include_router(fraud.router, prefix=settings.api_prefix + "/fraud", tags=["fraud"])
+    app.include_router(ratings.router, prefix=settings.api_prefix + "/ratings", tags=["ratings"])
+    app.include_router(notifications.router, prefix=settings.api_prefix + "/notifications", tags=["notifications"])
+    app.include_router(jobs.router, prefix=settings.api_prefix + "/jobs", tags=["jobs"])
+    app.include_router(ussd.router, prefix=settings.api_prefix + "/ussd", tags=["ussd"])
 
     # Static files for uploaded profile images
     app.mount(

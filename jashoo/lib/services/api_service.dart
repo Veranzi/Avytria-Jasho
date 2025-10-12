@@ -4,8 +4,9 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 class ApiService {
-  static const String baseUrl = 'http://localhost:3000/api';
-  static const String imageBaseUrl = 'http://localhost:3000/uploads/profile-images';
+  // 🐍 PYTHON BACKEND - FastAPI on port 8000
+  static const String baseUrl = 'http://localhost:8000/api';
+  static const String imageBaseUrl = 'http://localhost:8000/uploads/profile-images';
   
   // Singleton pattern
   static final ApiService _instance = ApiService._internal();
@@ -183,6 +184,9 @@ class ApiService {
     List<String>? skills,
     String? dateOfBirth,
     String? gender,
+    String? voiceBiometric,
+    String? faceBiometric,
+    bool hasBiometricAuth = false,
   }) async {
     return await _makeRequest('POST', '/auth/register', body: {
       'email': email,
@@ -193,6 +197,9 @@ class ApiService {
       if (skills != null) 'skills': skills,
       if (dateOfBirth != null) 'dateOfBirth': dateOfBirth,
       if (gender != null) 'gender': gender,
+      if (voiceBiometric != null) 'voiceBiometric': voiceBiometric,
+      if (faceBiometric != null) 'faceBiometric': faceBiometric,
+      'hasBiometricAuth': hasBiometricAuth,
     }, includeAuth: false);
   }
 
@@ -203,6 +210,27 @@ class ApiService {
     final response = await _makeRequest('POST', '/auth/login', body: {
       'email': email,
       'password': password,
+    }, includeAuth: false);
+    
+    // Store token if login successful
+    if (response['success'] == true && response['data']?['token'] != null) {
+      await setToken(response['data']['token']);
+    }
+    
+    return response;
+  }
+
+  Future<Map<String, dynamic>> biometricLogin({
+    String? phoneNumber,
+    String? email,
+    required String biometricType, // "voice" or "face"
+    required String biometricData, // Base64 encoded biometric data
+  }) async {
+    final response = await _makeRequest('POST', '/auth/biometric-login', body: {
+      if (phoneNumber != null) 'phoneNumber': phoneNumber,
+      if (email != null) 'email': email,
+      'biometricType': biometricType,
+      'biometricData': biometricData,
     }, includeAuth: false);
     
     // Store token if login successful
@@ -883,6 +911,147 @@ class ApiService {
 
   Future<Map<String, dynamic>> getSavingsStatistics() async {
     return await _makeRequest('GET', '/savings/statistics');
+  }
+
+  // Fraud reporting endpoint
+  Future<Map<String, dynamic>> reportFraud({
+    required String category,
+    required String description,
+    String? relatedItemId,
+    String? relatedItemType,
+    List<String>? evidenceImages,
+  }) async {
+    return await _makeRequest('POST', '/fraud/report', body: {
+      'category': category,
+      'description': description,
+      if (relatedItemId != null) 'relatedItemId': relatedItemId,
+      if (relatedItemType != null) 'relatedItemType': relatedItemType,
+      if (evidenceImages != null) 'evidenceImages': evidenceImages,
+    });
+  }
+
+  // Rating endpoints
+  Future<Map<String, dynamic>> rateJob({
+    required String jobId,
+    required double rating,
+    String? comment,
+  }) async {
+    return await _makeRequest('POST', '/jobs/$jobId/rate', body: {
+      'rating': rating,
+      if (comment != null) 'comment': comment,
+    });
+  }
+
+  Future<Map<String, dynamic>> ratePoster({
+    required String userId,
+    required double rating,
+    String? comment,
+  }) async {
+    return await _makeRequest('POST', '/user/$userId/rate', body: {
+      'rating': rating,
+      if (comment != null) 'comment': comment,
+    });
+  }
+
+  Future<Map<String, dynamic>> getRatings({
+    required String userId,
+    int page = 1,
+    int limit = 20,
+  }) async {
+    return await _makeRequest('GET', '/user/$userId/ratings?page=$page&limit=$limit');
+  }
+
+  // Payment method endpoints
+  Future<Map<String, dynamic>> addPaymentMethod({
+    required String type, // 'stripe', 'paypal', 'card'
+    required Map<String, dynamic> details,
+  }) async {
+    return await _makeRequest('POST', '/wallet/payment-methods', body: {
+      'type': type,
+      'details': details,
+    });
+  }
+
+  Future<Map<String, dynamic>> getPaymentMethods() async {
+    return await _makeRequest('GET', '/wallet/payment-methods');
+  }
+
+  Future<Map<String, dynamic>> removePaymentMethod({
+    required String methodId,
+  }) async {
+    return await _makeRequest('DELETE', '/wallet/payment-methods/$methodId');
+  }
+
+  // Stripe payment intent
+  Future<Map<String, dynamic>> createStripePaymentIntent({
+    required double amount,
+    required String currency,
+  }) async {
+    return await _makeRequest('POST', '/wallet/stripe/payment-intent', body: {
+      'amount': amount,
+      'currency': currency,
+    });
+  }
+
+  // PayPal payment
+  Future<Map<String, dynamic>> createPayPalPayment({
+    required double amount,
+    required String currency,
+  }) async {
+    return await _makeRequest('POST', '/wallet/paypal/create-payment', body: {
+      'amount': amount,
+      'currency': currency,
+    });
+  }
+
+  // Savings automation (standing order)
+  Future<Map<String, dynamic>> setupStandingOrder({
+    required String goalId,
+    required double amount,
+    required String frequency, // 'daily', 'weekly', 'monthly'
+    required DateTime startDate,
+  }) async {
+    return await _makeRequest('POST', '/savings/standing-order', body: {
+      'goalId': goalId,
+      'amount': amount,
+      'frequency': frequency,
+      'startDate': startDate.toIso8601String(),
+    });
+  }
+
+  Future<Map<String, dynamic>> getStandingOrders() async {
+    return await _makeRequest('GET', '/savings/standing-order');
+  }
+
+  Future<Map<String, dynamic>> cancelStandingOrder({
+    required String orderId,
+  }) async {
+    return await _makeRequest('DELETE', '/savings/standing-order/$orderId');
+  }
+
+  // Notification settings
+  Future<Map<String, dynamic>> updateNotificationSettings({
+    bool? overspendingAlerts,
+    bool? transactionAlerts,
+    bool? savingsReminders,
+    bool? jobAlerts,
+    bool? securityAlerts,
+  }) async {
+    return await _makeRequest('PUT', '/user/notification-settings', body: {
+      if (overspendingAlerts != null) 'overspendingAlerts': overspendingAlerts,
+      if (transactionAlerts != null) 'transactionAlerts': transactionAlerts,
+      if (savingsReminders != null) 'savingsReminders': savingsReminders,
+      if (jobAlerts != null) 'jobAlerts': jobAlerts,
+      if (securityAlerts != null) 'securityAlerts': securityAlerts,
+    });
+  }
+
+  // Access logs
+  Future<Map<String, dynamic>> getAccessLogs({
+    int page = 1,
+    int limit = 20,
+  }) async {
+    return await _makeRequest('GET', '/user/access-logs?page=$page&limit=$limit');
   }
 }
 

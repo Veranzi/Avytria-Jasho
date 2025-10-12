@@ -55,6 +55,26 @@ dependencies:
   responsive_framework: ^1.5.1
   flutter_screenutil: ^5.9.3
   http: ^1.5.0
+  
+  # Voice and accessibility features
+  speech_to_text: ^7.0.0
+  flutter_tts: ^4.2.0
+  permission_handler: ^11.3.1
+  camera: ^0.11.0+2
+  google_ml_kit: ^0.19.0
+  
+  # Payment integrations
+  flutter_stripe: ^11.3.0
+  flutter_paypal_payment: ^1.0.6
+  
+  # Additional utilities
+  url_launcher: ^6.3.1
+  webview_flutter: ^4.10.0
+  flutter_local_notifications: ^18.0.1
+  telephony: ^0.2.0
+  image: ^4.3.0
+  path_provider: ^2.1.5
+  path: ^1.9.0
 
 dev_dependencies:
   flutter_test:

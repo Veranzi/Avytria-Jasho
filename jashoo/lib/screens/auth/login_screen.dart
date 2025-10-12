@@ -29,34 +29,40 @@ class _LoginScreenState extends State<LoginScreen> {
       backgroundColor: Colors.white,
       resizeToAvoidBottomInset: true,
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom + 16),
-          child: Padding(
-            padding:
-                const EdgeInsets.symmetric(horizontal: 24.0, vertical: 40.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                // 1. Illustration at the top
-                Center(
-                  child: Image.asset(
-                    'assets/login.png', // your SVG/PNG illustration
-                    height: 180,
-                  ),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final isSmallScreen = constraints.maxHeight < 700 || constraints.maxWidth < 400;
+            
+            return SingleChildScrollView(
+              padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom + 16),
+              child: Padding(
+                padding: EdgeInsets.symmetric(
+                  horizontal: constraints.maxWidth * 0.06,
+                  vertical: isSmallScreen ? 20.0 : 30.0,
                 ),
-                const SizedBox(height: 30),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    // 1. Illustration at the top
+                    Center(
+                      child: Image.asset(
+                        'assets/login.png',
+                        height: isSmallScreen ? 120 : 150,
+                      ),
+                    ),
+                    SizedBox(height: isSmallScreen ? 20 : 25),
 
-                // 2. Title
-                Text(
-                  "Login",
-                  style: TextStyle(
-                    fontSize: 30.sp,
-                    fontWeight: FontWeight.w700,
-                    color: const Color(0xFF10B981),
-                  ),
-                  textAlign: TextAlign.left,
-                ),
-                const SizedBox(height: 25),
+                    // 2. Title - MATCH REGISTER SIZE
+                    Text(
+                      "Login",
+                      style: TextStyle(
+                        fontSize: isSmallScreen ? 22 : 26,
+                        fontWeight: FontWeight.bold,
+                        color: const Color(0xFF10B981),
+                      ),
+                      textAlign: TextAlign.left,
+                    ),
+                    SizedBox(height: isSmallScreen ? 20 : 25),
 
                 // 3. Identifier (email or phone)
                 if (_useEmailLogin)
@@ -232,23 +238,30 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                   child: Text(
                     "Login",
-                    style: TextStyle(fontSize: 18.sp, color: Colors.white),
+                    style: TextStyle(
+                      fontSize: isSmallScreen ? 16 : 18,
+                      color: Colors.white,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ),
-                const SizedBox(height: 18),
+                SizedBox(height: isSmallScreen ? 14 : 18),
 
                 // 7. Divider
                 Row(
-                  children: const [
-                    Expanded(child: Divider(thickness: 1)),
+                  children: [
+                    const Expanded(child: Divider(thickness: 1)),
                     Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 8.0),
-                      child: Text("or"),
+                      padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                      child: Text(
+                        "or",
+                        style: TextStyle(fontSize: isSmallScreen ? 12 : 13),
+                      ),
                     ),
-                    Expanded(child: Divider(thickness: 1)),
+                    const Expanded(child: Divider(thickness: 1)),
                   ],
                 ),
-                const SizedBox(height: 18),
+                SizedBox(height: isSmallScreen ? 14 : 18),
 
                 // 8. Sign Up
                 OutlinedButton(
@@ -260,7 +273,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     );
                   },
                   style: OutlinedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    padding: EdgeInsets.symmetric(vertical: isSmallScreen ? 14 : 16),
                     side: const BorderSide(color: Color(0xFF10B981)),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
@@ -269,7 +282,10 @@ class _LoginScreenState extends State<LoginScreen> {
                   child: Text(
                     "Create Account",
                     style: TextStyle(
-                        fontSize: 18.sp, color: const Color(0xFF10B981)),
+                      fontSize: isSmallScreen ? 16 : 18,
+                      color: const Color(0xFF10B981),
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ),
                 const SizedBox(height: 10),
@@ -300,10 +316,31 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                     ),
                   ],
-                )
-              ],
-            ),
-          ),
+                ),
+                    SizedBox(height: isSmallScreen ? 12 : 16),
+                    // Accessibility Login Button
+                    OutlinedButton.icon(
+                      onPressed: () {
+                        Navigator.pushNamed(context, '/accessibleLogin');
+                      },
+                      icon: const Icon(Icons.accessible_forward, color: Color(0xFF10B981)),
+                      label: Text(
+                        'Voice & Face Login (Accessibility)',
+                        style: TextStyle(
+                          color: const Color(0xFF10B981),
+                          fontSize: isSmallScreen ? 13 : 14,
+                        ),
+                      ),
+                      style: OutlinedButton.styleFrom(
+                        side: const BorderSide(color: Color(0xFF10B981), width: 2),
+                        padding: EdgeInsets.symmetric(vertical: isSmallScreen ? 10 : 12),
+                      ),
+                    )
+                  ],
+                ),
+              ),
+            );
+          },
         ),
       ),
     );

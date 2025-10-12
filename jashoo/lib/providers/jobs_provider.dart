@@ -44,6 +44,12 @@ class JobsProvider extends ChangeNotifier {
 
   List<JobItem> get jobs => List.unmodifiable(_jobs);
 
+  Future<void> loadJobs() async {
+    // Load jobs from API or local storage
+    // For now, just notify listeners with existing jobs
+    notifyListeners();
+  }
+
   void postJob(JobItem job) {
     _jobs.insert(0, job);
     notifyListeners();

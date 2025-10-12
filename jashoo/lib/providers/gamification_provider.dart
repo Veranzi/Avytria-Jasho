@@ -18,6 +18,12 @@ class GamificationProvider extends ChangeNotifier {
   List<Badge> get badges => List.unmodifiable(_badges);
   int get loginStreakDays => _loginStreakDays;
 
+  Future<void> loadProfile() async {
+    // Load gamification profile from API or local storage
+    // For now, just notify listeners with existing data
+    notifyListeners();
+  }
+
   void earnPoints(int value) {
     _points += value;
     _checkLevelUps();

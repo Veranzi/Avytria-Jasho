@@ -24,11 +24,12 @@ class Settings(BaseSettings):
 
     openai_api_key: str | None = None
 
-    uploads_dir: Path = Path("/workspace/python-backend/uploads")
+    uploads_dir: Path = Path(__file__).parent.parent / "uploads"
 
     class Config:
         env_file = ".env"
 
 
 settings = Settings()
+# Create uploads directory if it doesn't exist
 settings.uploads_dir.mkdir(parents=True, exist_ok=True)

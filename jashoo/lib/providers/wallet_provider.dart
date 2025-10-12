@@ -125,6 +125,12 @@ class WalletProvider extends ChangeNotifier {
   bool get hasPin => _balance?.hasPin ?? false;
   bool get isLoading => _isLoading;
   String? get error => _error;
+  
+  // Shortcut getters for individual balances
+  double get kesBalance => _balance?.kesBalance ?? 0.0;
+  double get usdtBalance => _balance?.usdtBalance ?? 0.0;
+  double get usdBalance => _balance?.usdBalance ?? 0.0;
+  String? get walletBalance => null; // Legacy compatibility
 
   // Get current balance for display currency
   double get currentBalance {

@@ -19,6 +19,9 @@ class RegisterRequest(BaseModel):
     skills: list[str] | None = None
     dateOfBirth: str | None = None
     gender: str | None = None
+    voiceBiometric: str | None = None  # Base64 encoded voice data or file path
+    faceBiometric: str | None = None  # Base64 encoded face image or file path
+    hasBiometricAuth: bool = False  # Flag indicating if user enrolled biometrics
 
 
 class LoginRequest(BaseModel):
@@ -40,9 +43,7 @@ def issue_token(user_id: str, days: int | None = None) -> str:
 
 @router.post("/register")
 def register(req: RegisterRequest):
-    if get_db() is None:
-        raise HTTPException(status_code=503, detail={"success": False, "message": "Firebase unavailable", "code": "FIREBASE_UNAVAILABLE"})
-
+    # Database is always available (Firebase or Mock)
     # Check existing
     if UsersRepo.find_by_email(req.email) or UsersRepo.find_by_phone(req.phoneNumber):
         raise HTTPException(status_code=400, detail={"success": False, "message": "Email or phone already registered", "code": "USER_EXISTS"})
@@ -64,6 +65,9 @@ def register(req: RegisterRequest):
         "lastLogin": None,
         "lastActive": None,
         "isVerified": False,
+        "hasBiometricAuth": req.hasBiometricAuth,
+        "voiceBiometric": req.voiceBiometric,  # Store biometric data
+        "faceBiometric": req.faceBiometric,  # Store biometric data
     }
     UsersRepo.create_user(user_id, user_doc)
 
@@ -82,8 +86,7 @@ def register(req: RegisterRequest):
 
 @router.post("/login")
 def login(req: LoginRequest):
-    if get_db() is None:
-        raise HTTPException(status_code=503, detail={"success": False, "message": "Firebase unavailable", "code": "FIREBASE_UNAVAILABLE"})
+    # Database is always available (Firebase or Mock)
     if not req.password:
         raise HTTPException(status_code=401, detail={"success": False, "message": "Invalid credentials", "code": "INVALID_CREDENTIALS"})
 
@@ -191,6 +194,80 @@ class ForgotPasswordRequest(BaseModel):
 @router.post("/forgot-password")
 def forgot_password(_: ForgotPasswordRequest):
     return {"success": True, "message": "If the email exists, a password reset link has been sent"}
+
+
+class BiometricLoginRequest(BaseModel):
+    phoneNumber: str | None = None
+    email: EmailStr | None = None
+    biometricType: str  # "voice" or "face"
+    biometricData: str  # Base64 encoded biometric data
+
+
+@router.post("/biometric-login")
+def biometric_login(req: BiometricLoginRequest):
+    """
+    Authenticate user using voice or face biometrics.
+    This is a simplified implementation. In production, you would:
+    1. Use proper biometric matching algorithms (e.g., face recognition ML models)
+    2. Calculate similarity scores and set thresholds
+    3. Implement anti-spoofing measures
+    4. Use secure biometric template storage
+    """
+    # Database is always available (Firebase or Mock)
+    
+    # Find user
+    user_doc = None
+    if req.email:
+        user_doc = UsersRepo.find_by_email(req.email.lower())
+    elif req.phoneNumber:
+        user_doc = UsersRepo.find_by_phone(req.phoneNumber)
+    
+    if not user_doc:
+        raise HTTPException(status_code=401, detail={"success": False, "message": "User not found", "code": "USER_NOT_FOUND"})
+    
+    # Check if user has biometric auth enabled
+    if not user_doc.get("hasBiometricAuth"):
+        raise HTTPException(status_code=400, detail={"success": False, "message": "Biometric authentication not enrolled", "code": "BIOMETRIC_NOT_ENROLLED"})
+    
+    # Verify biometric data
+    stored_biometric = None
+    if req.biometricType == "voice":
+        stored_biometric = user_doc.get("voiceBiometric")
+    elif req.biometricType == "face":
+        stored_biometric = user_doc.get("faceBiometric")
+    else:
+        raise HTTPException(status_code=400, detail={"success": False, "message": "Invalid biometric type", "code": "INVALID_BIOMETRIC_TYPE"})
+    
+    if not stored_biometric:
+        raise HTTPException(status_code=400, detail={"success": False, "message": f"{req.biometricType.capitalize()} biometric not enrolled", "code": "BIOMETRIC_NOT_ENROLLED"})
+    
+    # In production, implement proper biometric matching here
+    # For now, we'll do a simple comparison (NOT SECURE - just for demo)
+    # You should use ML models for face recognition and voice matching
+    biometric_match = stored_biometric == req.biometricData
+    
+    if not biometric_match:
+        raise HTTPException(status_code=401, detail={"success": False, "message": "Biometric authentication failed", "code": "BIOMETRIC_MISMATCH"})
+    
+    # Update last login
+    user_id = user_doc.get("userId")
+    UsersRepo.update_last_login(user_id)
+    
+    # Generate token
+    token = issue_token(user_id)
+    user_public = {
+        "userId": user_id,
+        "email": user_doc.get("email"),
+        "fullName": user_doc.get("fullName"),
+        "phoneNumber": user_doc.get("phoneNumber"),
+        "verificationLevel": user_doc.get("verificationLevel"),
+    }
+    
+    return {
+        "success": True,
+        "message": f"{req.biometricType.capitalize()} authentication successful",
+        "data": {"token": token, "user": user_public},
+    }
 
 
 class ChangePasswordRequest(BaseModel):

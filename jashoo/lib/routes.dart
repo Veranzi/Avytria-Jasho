@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:jashoo/screens/auth/splash_screen.dart';
+import 'screens/auth/welcome_screen.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/auth/signup_screen.dart';
+import 'screens/auth/accessible_login_screen.dart';
 import 'screens/auth/forgot_password_screen.dart';
 import 'screens/auth/change_password_screen.dart';
+import 'screens/auth/terms_conditions_screen.dart';
 import 'screens/dashboard/dashboard_screen.dart';
 import 'screens/dashboard/transaction_history_screen.dart';
 import 'screens/dashboard/earnings_screen.dart';
@@ -19,10 +22,12 @@ import 'screens/wallet/deposit_screen.dart';
 import 'screens/wallet/withdraw_screen.dart';
 import 'screens/wallet/convert_screen.dart';
 import 'screens/wallet/set_pin_screen.dart';
+import 'screens/wallet/enhanced_wallet_screen.dart';
 import 'screens/savings/savings_screen.dart';
 import 'screens/savings/loans_screen.dart';
 import 'screens/loans/loan_eligibility_screen.dart';
 import 'screens/support/support_chat_screen.dart';
+import 'screens/support/enhanced_chatbot_screen.dart';
 import 'screens/gamification/gamification_screen.dart';
 import 'screens/gamification/leaderboard_screen.dart';
 import 'screens/gamification/rewards_screen.dart';
@@ -36,9 +41,12 @@ import 'screens/dashboard/transactions.dart';
 // 👈 add splash
 
 final Map<String, WidgetBuilder> appRoutes = {
-  '/splash': (_) => const SplashScreen(), // 👈 new route
+  '/splash': (_) => const SplashScreen(),
+  '/welcome': (_) => const WelcomeScreen(),
   '/login': (_) => const LoginScreen(),
   '/signup': (_) => const SignupScreen(),
+  '/accessibleLogin': (_) => const AccessibleLoginScreen(),
+  '/terms': (_) => const TermsAndConditionsScreen(),
   '/forgotPassword': (_) => const ForgotPass(),
   '/changePassword': (_) => const ChangePassword(),
   '/dashboard': (_) => const DashBoardScreen(),
@@ -58,10 +66,12 @@ final Map<String, WidgetBuilder> appRoutes = {
   '/withdraw': (_) => const WithdrawScreen(),
   '/convert': (_) => const ConvertScreen(),
   '/setPin': (_) => const SetPinScreen(),
+  '/enhancedWallet': (_) => const EnhancedWalletScreen(),
   '/savings': (_) => const SavingsScreen(),
   '/loans': (_) => const LoansScreen(),
   '/loanEligibility': (_) => const LoanEligibilityScreen(),
   '/supportChat': (_) => const SupportChatScreen(),
+  '/chatbot': (_) => const EnhancedChatbotScreen(),
   '/gamification': (_) => const GamificationScreen(),
   '/leaderboard': (_) => const LeaderboardScreen(),
   '/rewards': (_) => const RewardsScreen(),

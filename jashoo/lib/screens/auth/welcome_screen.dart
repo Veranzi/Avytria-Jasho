@@ -1,9 +1,6 @@
-import 'dart:async';
-import 'dart:convert';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:flutter/services.dart' show rootBundle;
+import 'dart:async';
 
 class WelcomeScreen extends StatefulWidget {
   const WelcomeScreen({super.key});
@@ -13,298 +10,344 @@ class WelcomeScreen extends StatefulWidget {
 }
 
 class _WelcomeScreenState extends State<WelcomeScreen> {
-  static const List<String> _fallbackImages = <String>[
-    'assets/login.png',
-    'assets/signup.png',
-    'assets/sign_illustration.jpg',
-    'assets/login_illustration.png',
+  final PageController _pageController = PageController();
+  int _currentPage = 0;
+  Timer? _timer;
+
+  // Images and their corresponding messages (2 lines each)
+  final List<Map<String, dynamic>> _slides = [
+    {
+      'image': 'Baba-fua.jpeg',
+      'line1': '💧 Baba Fua (Laundry Worker)',
+      'line2': 'Jasho helps you track, save, and grow every shilling of your hustle.',
+    },
+    {
+      'image': 'boda_boda.jpeg',
+      'line1': '🛵 Boda Boda Rider',
+      'line2': 'Jasho helps you track your daily earnings and spend wisely.',
+    },
+    {
+      'image': 'mama_mboga.jpeg',
+      'line1': '🍅 Mama Mboga (Market Vendor)',
+      'line2': 'Turn your daily hustle into lasting profit with Jasho.',
+    },
+    {
+      'image': 'street_vendor.jpeg',
+      'line1': '🧺 Street Vendor',
+      'line2': 'Jasho helps you stabilize your hustle and plan ahead, one sale at a time.',
+    },
   ];
-
-  late List<String> _backgroundImages = List<String>.from(_fallbackImages);
-
-  // Captions corresponding to each background image
-  final List<String> _captions = const <String>[
-    'Powering your hustle',
-    'Savings better',
-    'Get Gig',
-    'Smart tool',
-  ];
-
-  late final Timer _backgroundTimer;
-  int _currentBackgroundIndex = 0;
-
-  static const Color _primaryGreen = Color(0xFF10B981);
 
   @override
   void initState() {
     super.initState();
-    _tryLoadBrandImages();
-    _backgroundTimer = Timer.periodic(const Duration(seconds: 4), (_) {
-      if (!mounted) return;
-      setState(() {
-        _currentBackgroundIndex =
-            (_currentBackgroundIndex + 1) % _backgroundImages.length;
-      });
-    });
+    _startAutoSlide();
   }
 
-  Future<void> _tryLoadBrandImages() async {
-    try {
-      final String manifestJson = await rootBundle.loadString('AssetManifest.json');
-      final Map<String, dynamic> manifestMap = json.decode(manifestJson) as Map<String, dynamic>;
-      final List<String> candidates = manifestMap.keys
-          .where((String path) => path.startsWith('assets/') &&
-              (path.toLowerCase().contains('mama') ||
-               path.toLowerCase().contains('baba') ||
-               path.toLowerCase().contains('fua')))
-          .toList()
-        ..sort();
-      if (candidates.isNotEmpty && mounted) {
-        setState(() {
-          _backgroundImages = candidates;
-          _currentBackgroundIndex = 0;
-        });
+  void _startAutoSlide() {
+    _timer = Timer.periodic(const Duration(seconds: 4), (timer) {
+      if (_currentPage < _slides.length - 1) {
+        _currentPage++;
+      } else {
+        _currentPage = 0;
       }
-    } catch (_) {
-      // Ignore and keep fallbacks
-    }
+
+      if (_pageController.hasClients) {
+        _pageController.animateToPage(
+          _currentPage,
+          duration: const Duration(milliseconds: 600),
+          curve: Curves.easeInOut,
+        );
+      }
+    });
   }
 
   @override
   void dispose() {
-    _backgroundTimer.cancel();
+    _timer?.cancel();
+    _pageController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    final Size screenSize = MediaQuery.of(context).size;
-    final double sheetHeight = screenSize.height * 0.38;
-
+    // Get screen dimensions for responsiveness
+    final screenHeight = MediaQuery.of(context).size.height;
+    final isSmallScreen = screenHeight < 700;
+    
     return Scaffold(
-      backgroundColor: Colors.black,
-      body: Stack(
-        children: [
-          // 1) Animated background with smooth fade
-          Positioned.fill(
-            child: AnimatedSwitcher(
-              duration: const Duration(milliseconds: 900),
-              switchInCurve: Curves.easeIn,
-              switchOutCurve: Curves.easeOut,
-              layoutBuilder: (currentChild, previousChildren) {
-                return Stack(
-                  fit: StackFit.expand,
-                  children: <Widget>[
-                    ...previousChildren,
-                    if (currentChild != null) currentChild,
-                  ],
-                );
-              },
-              child: Image.asset(
-                _backgroundImages[_currentBackgroundIndex],
-                key: ValueKey<int>(_currentBackgroundIndex),
-                fit: BoxFit.cover,
-              ),
-            ),
-          ),
-
-          // Top gradient overlay for readability
-          Positioned.fill(
-            child: Container(
-              decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    Color.fromARGB(140, 0, 0, 0),
-                    Color.fromARGB(40, 0, 0, 0),
-                    Colors.transparent,
-                  ],
-                  stops: [0.0, 0.2, 0.5],
-                ),
-              ),
-            ),
-          ),
-
-          // 2) Caption text centered near bottom of background section
-          Positioned(
-            left: 0,
-            right: 0,
-            bottom: sheetHeight + 52,
-            child: Center(
-              child: Container(
-                padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
-                decoration: BoxDecoration(
-                  color: Colors.black.withOpacity(0.35),
-                  borderRadius: BorderRadius.circular(16.r),
-                ),
-                child: Text(
-                  _captions[_currentBackgroundIndex % _captions.length],
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w600,
-                    fontSize: 14.sp,
-                  ),
-                ),
-              ),
-            ),
-          ),
-
-          // 3) Progress dots centered near bottom of background section
-          Positioned(
-            left: 0,
-            right: 0,
-            bottom: sheetHeight + 18.h,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: List.generate(_backgroundImages.length, (int index) {
-                final bool isActive = index == _currentBackgroundIndex;
-                return AnimatedContainer(
-                  duration: const Duration(milliseconds: 250),
-                  margin: EdgeInsets.symmetric(horizontal: 4.w),
-                  width: isActive ? 12.w : 6.w,
-                  height: 6.w,
-                  decoration: BoxDecoration(
-                    color: isActive
-                        ? _primaryGreen
-                        : Colors.white.withOpacity(0.55),
-                    borderRadius: BorderRadius.circular(4.r),
-                  ),
-                );
-              }),
-            ),
-          ),
-
-          // 4) Bottom white sheet with content
-          Positioned(
-            left: 0,
-            right: 0,
-            bottom: 0,
-            child: SafeArea(
-              top: false,
-              child: Container(
-                height: sheetHeight,
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.vertical(
-                    top: Radius.circular(24.r),
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.1),
-                      blurRadius: 20,
-                      offset: const Offset(0, -6),
-                    )
-                  ],
-                ),
-                child: Padding(
-                  padding: EdgeInsets.fromLTRB(20.w, 12.h, 20.w, 24.h),
-                  child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          return Stack(
+            children: [
+              // Full-screen image slideshow
+              PageView.builder(
+                controller: _pageController,
+                onPageChanged: (index) {
+                  setState(() {
+                    _currentPage = index;
+                  });
+                },
+                itemCount: _slides.length,
+                itemBuilder: (context, index) {
+                  return Stack(
                     children: [
-                      // Back arrow
-                      Align(
-                        alignment: Alignment.centerLeft,
-                        child: IconButton(
-                          icon: const Icon(Icons.arrow_back),
-                          color: Colors.black,
-                          splashRadius: 24.r,
-                          onPressed: () {
-                            if (Navigator.of(context).canPop()) {
-                              Navigator.of(context).pop();
-                            }
+                      // Full-screen image
+                      Positioned.fill(
+                        child: Image.asset(
+                          _slides[index]['image']!,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) {
+                            return Container(
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                  colors: [
+                                    const Color(0xFFFF6B6B).withValues(alpha: 0.8),
+                                    const Color(0xFFFFD93D).withValues(alpha: 0.7),
+                                    const Color(0xFF6BCB77).withValues(alpha: 0.8),
+                                    const Color(0xFF4D96FF).withValues(alpha: 0.7),
+                                  ],
+                                ),
+                              ),
+                              child: Center(
+                                child: Icon(
+                                  Icons.image_outlined,
+                                  size: 100,
+                                  color: Colors.white.withValues(alpha: 0.5),
+                                ),
+                              ),
+                            );
                           },
                         ),
                       ),
-                      SizedBox(height: 6.h),
-                      // Title + Subtitle centered
-                      Center(
-                        child: Column(
-                          children: [
-                            Text(
-                              'Welcome Back',
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                color: Colors.black,
-                                fontWeight: FontWeight.w600,
-                                fontSize: 22.sp,
-                              ),
-                            ),
-                            SizedBox(height: 8.h),
-                            Text(
-                              'Empower your hustle with smart financial tool',
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                color: Colors.black.withOpacity(0.65),
-                                fontSize: 14.sp,
-                                height: 1.4,
-                                fontWeight: FontWeight.w400,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const Spacer(),
-                      // Primary button
-                      SizedBox(
-                        width: double.infinity,
-                        child: ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: _primaryGreen,
-                            foregroundColor: Colors.white,
-                            padding: EdgeInsets.symmetric(vertical: 14.h),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12.r),
+                      
+                      // Gradient overlay for better text readability
+                      Positioned.fill(
+                        child: Container(
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              begin: Alignment.topCenter,
+                              end: Alignment.bottomCenter,
+                              colors: [
+                                Colors.black.withValues(alpha: 0.2),
+                                Colors.black.withValues(alpha: 0.3),
+                                Colors.black.withValues(alpha: 0.7),
+                              ],
                             ),
                           ),
-                          onPressed: () {
-                            Navigator.of(context).pushReplacementNamed('/login');
-                          },
-                          child: Text('Login',
-                              style: TextStyle(
-                                fontSize: 16.sp,
-                                fontWeight: FontWeight.w600,
-                              )),
                         ),
                       ),
-                      SizedBox(height: 12.h),
-                      // Secondary button
-                      SizedBox(
-                        width: double.infinity,
-                        child: OutlinedButton(
-                          style: OutlinedButton.styleFrom(
-                            backgroundColor: Colors.white,
-                            foregroundColor: _primaryGreen,
-                            side: const BorderSide(
-                              color: _primaryGreen,
-                              width: 1.0,
-                            ),
-                            padding: EdgeInsets.symmetric(vertical: 14.h),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12.r),
-                            ),
+
+                      // Text overlay at BOTTOM (just above indicators)
+                      Positioned(
+                        bottom: constraints.maxHeight * 0.37,
+                        left: 0,
+                        right: 0,
+                        child: Padding(
+                          padding: EdgeInsets.symmetric(
+                            horizontal: constraints.maxWidth * 0.08,
                           ),
-                          onPressed: () {
-                            Navigator.of(context).pushReplacementNamed('/signup');
-                          },
-                          child: Text(
-                            'Sign Up',
-                            style: TextStyle(
-                              fontSize: 16.sp,
-                              fontWeight: FontWeight.w600,
+                          child: Column(
+                            children: [
+                              // Line 1 (Title with emoji)
+                              Text(
+                                _slides[index]['line1']!,
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  fontSize: isSmallScreen ? 18 : 22,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                  height: 1.3,
+                                ),
+                              ),
+                              SizedBox(height: 12),
+                              // Line 2 (Message)
+                              Text(
+                                _slides[index]['line2']!,
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  fontSize: isSmallScreen ? 14 : 16,
+                                  color: Colors.white,
+                                  height: 1.4,
+                                  fontWeight: FontWeight.w400,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+
+                      // Page indicators
+                      Positioned(
+                        bottom: constraints.maxHeight * 0.32,
+                        left: 0,
+                        right: 0,
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: List.generate(
+                            _slides.length,
+                            (i) => AnimatedContainer(
+                              duration: const Duration(milliseconds: 300),
+                              margin: const EdgeInsets.symmetric(horizontal: 4),
+                              height: 8,
+                              width: i == _currentPage ? 24 : 8,
+                              decoration: BoxDecoration(
+                                color: i == _currentPage
+                                    ? Colors.white
+                                    : Colors.white.withValues(alpha: 0.5),
+                                borderRadius: BorderRadius.circular(4),
+                              ),
                             ),
                           ),
                         ),
                       ),
                     ],
+                  );
+                },
+              ),
+
+              // Bottom white card
+              Positioned(
+                left: 0,
+                right: 0,
+                bottom: 0,
+                child: Container(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: constraints.maxWidth * 0.06,
+                    vertical: isSmallScreen ? 16 : 20,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.only(
+                      topLeft: Radius.circular(24),
+                      topRight: Radius.circular(24),
+                    ),
+                  ),
+                  child: SafeArea(
+                    top: false,
+                    child: ConstrainedBox(
+                      constraints: BoxConstraints(
+                        maxWidth: 500,
+                      ),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          // Back arrow
+                          Align(
+                            alignment: Alignment.centerLeft,
+                            child: IconButton(
+                              icon: Icon(
+                                Icons.arrow_back,
+                                size: isSmallScreen ? 22 : 24,
+                              ),
+                              onPressed: () {
+                                if (Navigator.canPop(context)) {
+                                  Navigator.pop(context);
+                                }
+                              },
+                              padding: EdgeInsets.zero,
+                            ),
+                          ),
+                          SizedBox(height: isSmallScreen ? 4 : 8),
+
+                          // Welcome Back heading
+                          Text(
+                            'Welcome Back',
+                            style: TextStyle(
+                              fontSize: isSmallScreen ? 20 : 24,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.black87,
+                            ),
+                          ),
+                          SizedBox(height: isSmallScreen ? 8 : 10),
+
+                          // Description text
+                          Padding(
+                            padding: EdgeInsets.symmetric(
+                              horizontal: constraints.maxWidth * 0.02,
+                            ),
+                            child: Text(
+                              'We\'re thrilled to have you back. Let\'s dive right in and start transacting.',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                fontSize: isSmallScreen ? 12 : 14,
+                                color: Colors.grey[600],
+                                height: 1.4,
+                              ),
+                            ),
+                          ),
+                          SizedBox(height: isSmallScreen ? 20 : 28),
+
+                          // Login Button
+                          SizedBox(
+                            width: double.infinity,
+                            height: isSmallScreen ? 48 : 54,
+                            child: ElevatedButton(
+                              onPressed: () {
+                                Navigator.pushNamed(context, '/login');
+                              },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFF10B981),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                elevation: 0,
+                              ),
+                              child: Text(
+                                'Log In',
+                                style: TextStyle(
+                                  fontSize: isSmallScreen ? 14 : 16,
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w600,
+                                  letterSpacing: 0.5,
+                                ),
+                              ),
+                            ),
+                          ),
+                          SizedBox(height: isSmallScreen ? 12 : 14),
+
+                          // Get Started Button (changed from Sign Up)
+                          SizedBox(
+                            width: double.infinity,
+                            height: isSmallScreen ? 48 : 54,
+                            child: OutlinedButton(
+                              onPressed: () {
+                                Navigator.pushNamed(context, '/signup');
+                              },
+                              style: OutlinedButton.styleFrom(
+                                side: const BorderSide(
+                                  color: Color(0xFF10B981),
+                                  width: 2,
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                              ),
+                              child: Text(
+                                'Get Started',
+                                style: TextStyle(
+                                  fontSize: isSmallScreen ? 14 : 16,
+                                  color: const Color(0xFF10B981),
+                                  fontWeight: FontWeight.w600,
+                                  letterSpacing: 0.5,
+                                ),
+                              ),
+                            ),
+                          ),
+                          SizedBox(height: isSmallScreen ? 8 : 12),
+                        ],
+                      ),
+                    ),
                   ),
                 ),
               ),
-            ),
-          ),
-        ],
+            ],
+          );
+        },
       ),
     );
   }
 }
+

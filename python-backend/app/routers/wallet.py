@@ -1,8 +1,7 @@
 from __future__ import annotations
 from datetime import datetime
-from idlelib.query import Query
 from typing import Optional
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, Field
 from ..middleware.auth import get_current_user
 from ..utils.security import mask_balance
@@ -12,7 +11,8 @@ from passlib.context import CryptContext
 from typing import Any, Dict, List
 from datetime import timedelta
 
-from auth import get_current_user
+# Initialize router
+router = APIRouter()
 
 # ---------- Pydantic models for analytics ----------
 

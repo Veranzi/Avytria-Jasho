@@ -202,20 +202,20 @@ class MainAppScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildUserInfo(),
+            _buildUserInfo(context),
             SizedBox(height: 20),
-            _buildWalletInfo(),
+            _buildWalletInfo(context),
             SizedBox(height: 20),
-            _buildQuickActions(),
+            _buildQuickActions(context),
             SizedBox(height: 20),
-            _buildRecentTransactions(),
+            _buildRecentTransactions(context),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildUserInfo() {
+  Widget _buildUserInfo(BuildContext context) {
     return Consumer<UserProvider>(
       builder: (context, userProvider, child) {
         if (userProvider.isLoading) {
@@ -260,7 +260,7 @@ class MainAppScreen extends StatelessWidget {
                 Text('Rating: ${profile.rating.toStringAsFixed(1)}/5'),
                 Text('Verified: ${profile.isVerified ? 'Yes' : 'No'}'),
                 if (profile.isKycComplete == true)
-                  Text('KYC: Complete'),
+                  Text('KYC: Complete')
                 else
                   Text('KYC: Incomplete'),
               ],
@@ -271,7 +271,7 @@ class MainAppScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildWalletInfo() {
+  Widget _buildWalletInfo(BuildContext context) {
     return Consumer<WalletProvider>(
       builder: (context, walletProvider, child) {
         if (walletProvider.isLoading) {
@@ -337,7 +337,7 @@ class MainAppScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildQuickActions() {
+  Widget _buildQuickActions(BuildContext context) {
     return Card(
       child: Padding(
         padding: EdgeInsets.all(16),
@@ -353,15 +353,15 @@ class MainAppScreen extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
                 ElevatedButton(
-                  onPressed: () => _showDepositDialog(),
+                  onPressed: () => _showDepositDialog(context),
                   child: Text('Deposit'),
                 ),
                 ElevatedButton(
-                  onPressed: () => _showWithdrawDialog(),
+                  onPressed: () => _showWithdrawDialog(context),
                   child: Text('Withdraw'),
                 ),
                 ElevatedButton(
-                  onPressed: () => _showTransferDialog(),
+                  onPressed: () => _showTransferDialog(context),
                   child: Text('Transfer'),
                 ),
               ],
@@ -372,7 +372,7 @@ class MainAppScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildRecentTransactions() {
+  Widget _buildRecentTransactions(BuildContext context) {
     return Consumer<WalletProvider>(
       builder: (context, walletProvider, child) {
         final transactions = walletProvider.getRecentTransactions();
@@ -422,7 +422,7 @@ class MainAppScreen extends StatelessWidget {
     }
   }
 
-  void _showDepositDialog() {
+  void _showDepositDialog(BuildContext context) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -456,7 +456,7 @@ class MainAppScreen extends StatelessWidget {
     );
   }
 
-  void _showWithdrawDialog() {
+  void _showWithdrawDialog(BuildContext context) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -491,7 +491,7 @@ class MainAppScreen extends StatelessWidget {
     );
   }
 
-  void _showTransferDialog() {
+  void _showTransferDialog(BuildContext context) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
