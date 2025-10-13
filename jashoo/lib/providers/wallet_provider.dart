@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import '../services/api_service.dart';
+import '../services/notification_service.dart';
 
 enum Currency { kes, usdt, usd }
 
@@ -118,6 +119,23 @@ class WalletProvider extends ChangeNotifier {
   final List<WalletTransaction> _transactions = [];
   bool _isLoading = false;
   String? _error;
+  
+  // Spending tracking for notifications
+  double _averageDailySpending = 0.0;
+  double _spendingThreshold = 5000.0; // Default threshold in KES
+
+  WalletProvider() {
+    // Initialize with default balance of 12,500 KES
+    _balance = WalletBalance(
+      kesBalance: 12500.0,
+      usdtBalance: 0.0,
+      usdBalance: 0.0,
+      hasPin: false,
+      isPinLocked: false,
+      isFrozen: false,
+      status: 'active',
+    );
+  }
 
   WalletBalance? get balance => _balance;
   Currency get displayCurrency => _displayCurrency;
@@ -127,7 +145,7 @@ class WalletProvider extends ChangeNotifier {
   String? get error => _error;
   
   // Shortcut getters for individual balances
-  double get kesBalance => _balance?.kesBalance ?? 0.0;
+  double get kesBalance => _balance?.kesBalance ?? 12500.0; // Default to 12500
   double get usdtBalance => _balance?.usdtBalance ?? 0.0;
   double get usdBalance => _balance?.usdBalance ?? 0.0;
   String? get walletBalance => null; // Legacy compatibility
@@ -316,6 +334,9 @@ class WalletProvider extends ChangeNotifier {
     _setLoading(true);
     _clearError();
     
+    // Check for unusual spending before withdrawal
+    await _checkUnusualSpending(amount);
+    
     try {
       final response = await ApiService().withdraw(
         amount: amount,
@@ -327,9 +348,22 @@ class WalletProvider extends ChangeNotifier {
       );
       
       if (response['success'] == true) {
+        // Check if withdrawal exceeds threshold
+        if (amount > _spendingThreshold) {
+          await NotificationService().showNotification(
+            id: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+            title: '⚠️ Large Withdrawal Alert',
+            body: 'You withdrew KES ${amount.toStringAsFixed(2)}. This exceeds your spending threshold of KES ${_spendingThreshold.toStringAsFixed(2)}.',
+          );
+        }
+        
         // Reload balance and transactions
         await loadBalance();
         await loadTransactions();
+        
+        // Update average spending
+        _updateAverageSpending();
+        
         return true;
       } else {
         _setError(response['message'] ?? 'Withdrawal failed');
@@ -512,6 +546,56 @@ class WalletProvider extends ChangeNotifier {
         .where((txn) => txn.type == 'deposit' && (txn.status == 'Success' || txn.status == 'completed'))
         .fold(0.0, (sum, txn) => sum + txn.amount);
   }
+  
+  // Check for unusual spending patterns
+  Future<void> _checkUnusualSpending(double amount) async {
+    // Calculate average spending from recent transactions
+    if (_transactions.isNotEmpty) {
+      final recentWithdrawals = _transactions
+          .where((txn) => 
+              txn.type == 'withdrawal' && 
+              (txn.status == 'Success' || txn.status == 'completed') &&
+              txn.date.isAfter(DateTime.now().subtract(const Duration(days: 30))))
+          .toList();
+      
+      if (recentWithdrawals.isNotEmpty) {
+        _averageDailySpending = recentWithdrawals
+            .fold(0.0, (sum, txn) => sum + txn.amount) / 30;
+        
+        // If amount is 3x the average, trigger notification
+        if (amount > (_averageDailySpending * 3) && amount > 1000) {
+          await NotificationService().showNotification(
+            id: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+            title: '🚨 Unusual Spending Detected',
+            body: 'This withdrawal of KES ${amount.toStringAsFixed(2)} is significantly higher than your usual spending pattern (avg: KES ${_averageDailySpending.toStringAsFixed(2)}/day).',
+          );
+        }
+      }
+    }
+  }
+  
+  // Update average spending after successful transaction
+  void _updateAverageSpending() {
+    final recentWithdrawals = _transactions
+        .where((txn) => 
+            txn.type == 'withdrawal' && 
+            (txn.status == 'Success' || txn.status == 'completed') &&
+            txn.date.isAfter(DateTime.now().subtract(const Duration(days: 30))))
+        .toList();
+    
+    if (recentWithdrawals.isNotEmpty) {
+      _averageDailySpending = recentWithdrawals
+          .fold(0.0, (sum, txn) => sum + txn.amount) / 30;
+    }
+  }
+  
+  // Set custom spending threshold
+  void setSpendingThreshold(double threshold) {
+    _spendingThreshold = threshold;
+    notifyListeners();
+  }
+  
+  double get spendingThreshold => _spendingThreshold;
 
   // Private helper methods
   void _setLoading(bool loading) {

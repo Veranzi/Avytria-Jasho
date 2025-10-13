@@ -51,7 +51,7 @@ class NotificationService {
     required double limit,
     required String category,
   }) async {
-    const androidDetails = AndroidNotificationDetails(
+    final androidDetails = AndroidNotificationDetails(
       'overspending_channel',
       'Overspending Alerts',
       channelDescription: 'Alerts when you exceed spending limits',
@@ -67,7 +67,7 @@ class NotificationService {
       presentSound: true,
     );
 
-    const notificationDetails = NotificationDetails(
+    final notificationDetails = NotificationDetails(
       android: androidDetails,
       iOS: iosDetails,
     );
@@ -86,7 +86,7 @@ class NotificationService {
     required double totalSpent,
     required Map<String, double> categoryBreakdown,
   }) async {
-    const androidDetails = AndroidNotificationDetails(
+    final androidDetails = AndroidNotificationDetails(
       'spending_summary_channel',
       'Spending Summary',
       channelDescription: 'Daily spending summaries',
@@ -97,7 +97,7 @@ class NotificationService {
 
     const iosDetails = DarwinNotificationDetails();
 
-    const notificationDetails = NotificationDetails(
+    final notificationDetails = NotificationDetails(
       android: androidDetails,
       iOS: iosDetails,
     );
@@ -120,7 +120,7 @@ class NotificationService {
     required String activity,
     required String location,
   }) async {
-    const androidDetails = AndroidNotificationDetails(
+    final androidDetails = AndroidNotificationDetails(
       'security_channel',
       'Security Alerts',
       channelDescription: 'Alerts for unusual account activity',
@@ -136,7 +136,7 @@ class NotificationService {
       presentSound: true,
     );
 
-    const notificationDetails = NotificationDetails(
+    final notificationDetails = NotificationDetails(
       android: androidDetails,
       iOS: iosDetails,
     );
@@ -156,7 +156,7 @@ class NotificationService {
     required double progress,
     required double target,
   }) async {
-    const androidDetails = AndroidNotificationDetails(
+    final androidDetails = AndroidNotificationDetails(
       'savings_channel',
       'Savings Alerts',
       channelDescription: 'Updates on your savings goals',
@@ -168,7 +168,7 @@ class NotificationService {
 
     const iosDetails = DarwinNotificationDetails();
 
-    const notificationDetails = NotificationDetails(
+    final notificationDetails = NotificationDetails(
       android: androidDetails,
       iOS: iosDetails,
     );
@@ -189,7 +189,7 @@ class NotificationService {
     required String jobTitle,
     required String status,
   }) async {
-    const androidDetails = AndroidNotificationDetails(
+    final androidDetails = AndroidNotificationDetails(
       'jobs_channel',
       'Job Alerts',
       channelDescription: 'Updates on your job applications',
@@ -205,7 +205,7 @@ class NotificationService {
       presentSound: true,
     );
 
-    const notificationDetails = NotificationDetails(
+    final notificationDetails = NotificationDetails(
       android: androidDetails,
       iOS: iosDetails,
     );
@@ -225,7 +225,7 @@ class NotificationService {
     required double amount,
     required String currency,
   }) async {
-    const androidDetails = AndroidNotificationDetails(
+    final androidDetails = AndroidNotificationDetails(
       'transaction_channel',
       'Transaction Alerts',
       channelDescription: 'Notifications for all transactions',
@@ -240,7 +240,7 @@ class NotificationService {
       presentSound: true,
     );
 
-    const notificationDetails = NotificationDetails(
+    final notificationDetails = NotificationDetails(
       android: androidDetails,
       iOS: iosDetails,
     );
@@ -261,7 +261,7 @@ class NotificationService {
   Future<void> showFraudAlert({
     required String message,
   }) async {
-    const androidDetails = AndroidNotificationDetails(
+    final androidDetails = AndroidNotificationDetails(
       'fraud_channel',
       'Fraud Alerts',
       channelDescription: 'Critical fraud and security alerts',
@@ -279,7 +279,7 @@ class NotificationService {
       presentSound: true,
     );
 
-    const notificationDetails = NotificationDetails(
+    final notificationDetails = NotificationDetails(
       android: androidDetails,
       iOS: iosDetails,
     );
@@ -298,7 +298,7 @@ class NotificationService {
     required String deviceName,
     required String location,
   }) async {
-    const androidDetails = AndroidNotificationDetails(
+    final androidDetails = AndroidNotificationDetails(
       'security_channel',
       'Security Alerts',
       channelDescription: 'Alerts for unusual account activity',
@@ -314,7 +314,7 @@ class NotificationService {
       presentSound: true,
     );
 
-    const notificationDetails = NotificationDetails(
+    final notificationDetails = NotificationDetails(
       android: androidDetails,
       iOS: iosDetails,
     );
@@ -336,6 +336,49 @@ class NotificationService {
   // Clear specific notification
   Future<void> clear(int id) async {
     await _notifications.cancel(id);
+  }
+
+  // Generic notification method for custom alerts
+  Future<void> showNotification({
+    required int id,
+    required String title,
+    required String body,
+    String? payload,
+    Color? color,
+    Importance importance = Importance.high,
+  }) async {
+    if (!_initialized) {
+      await initialize();
+    }
+
+    final androidDetails = AndroidNotificationDetails(
+      'general_channel',
+      'General Notifications',
+      channelDescription: 'General app notifications',
+      importance: importance,
+      priority: importance == Importance.max ? Priority.max : Priority.high,
+      icon: '@mipmap/ic_launcher',
+      color: color ?? const Color(0xFF10B981),
+    );
+
+    const iosDetails = DarwinNotificationDetails(
+      presentAlert: true,
+      presentBadge: true,
+      presentSound: true,
+    );
+
+    final notificationDetails = NotificationDetails(
+      android: androidDetails,
+      iOS: iosDetails,
+    );
+
+    await _notifications.show(
+      id,
+      title,
+      body,
+      notificationDetails,
+      payload: payload,
+    );
   }
 }
 

@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'dart:async';
+import 'package:speech_to_text/speech_to_text.dart' as stt;
+import 'package:flutter_tts/flutter_tts.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 class WelcomeScreen extends StatefulWidget {
   const WelcomeScreen({super.key});
@@ -13,6 +16,13 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
   final PageController _pageController = PageController();
   int _currentPage = 0;
   Timer? _timer;
+  
+  // Voice navigation for accessibility
+  final stt.SpeechToText _speech = stt.SpeechToText();
+  final FlutterTts _tts = FlutterTts();
+  bool _speechEnabled = false;
+  bool _isListening = false;
+  bool _hasAnnounced = false;
 
   // Images and their corresponding messages (2 lines each)
   final List<Map<String, dynamic>> _slides = [
@@ -42,6 +52,143 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
   void initState() {
     super.initState();
     _startAutoSlide();
+    _initVoiceNavigation();
+  }
+  
+  Future<void> _initVoiceNavigation() async {
+    // Initialize TTS with feminine Kenyan voice
+    await _tts.setLanguage("en-KE");
+    await _tts.setSpeechRate(0.45);
+    await _tts.setVolume(1.0);
+    await _tts.setPitch(1.2);
+    
+    var voices = await _tts.getVoices;
+    if (voices != null && voices.isNotEmpty) {
+      var femaleVoice = voices.firstWhere(
+        (voice) =>
+          (voice['name'].toString().toLowerCase().contains('female') ||
+           voice['name'].toString().toLowerCase().contains('woman')) &&
+          voice['locale']?.toString().contains('KE') == true,
+        orElse: () => voices.first,
+      );
+      if (femaleVoice != null) {
+        await _tts.setVoice({
+          "name": femaleVoice['name'],
+          "locale": femaleVoice['locale'],
+        });
+      }
+    }
+    
+    // Check if microphone permission is already granted
+    final micStatus = await Permission.microphone.status;
+    if (micStatus.isGranted) {
+      _speechEnabled = await _speech.initialize(
+        onError: (error) => print('Speech error: $error'),
+        onStatus: (status) {
+          if (status == 'done' && mounted) {
+            setState(() => _isListening = false);
+            // Restart listening after command
+            Future.delayed(const Duration(milliseconds: 500), () {
+              if (mounted) _startVoiceListener();
+            });
+          }
+        },
+      );
+      
+      if (_speechEnabled) {
+        // Announce screen and start listening
+        await Future.delayed(const Duration(milliseconds: 500));
+        await _announceScreen();
+        _startVoiceListener();
+      }
+    }
+  }
+  
+  Future<void> _announceScreen() async {
+    if (!_hasAnnounced) {
+      await _tts.speak(
+        'Welcome to Jasho. Say "Log In" to access your account, or say "Get Started" to create a new account. You can also say "Help" for more options.'
+      );
+      _hasAnnounced = true;
+    }
+  }
+  
+  Future<void> _startVoiceListener() async {
+    if (!_speechEnabled || !mounted || _isListening) return;
+    
+    setState(() => _isListening = true);
+    
+    _speech.listen(
+      onResult: (result) {
+        if (result.finalResult) {
+          final command = result.recognizedWords.toLowerCase();
+          print('Voice command: $command');
+          _processVoiceCommand(command);
+        }
+      },
+      localeId: 'en_KE',
+      listenFor: const Duration(seconds: 30),
+      pauseFor: const Duration(seconds: 2),
+    );
+  }
+  
+  void _processVoiceCommand(String command) {
+    // Log in commands (English & Swahili)
+    if (command.contains('log in') || 
+        command.contains('login') || 
+        command.contains('sign in') ||
+        command.contains('signin') ||
+        command.contains('ingia') || // Swahili: enter/login
+        command.contains('weka sahihi')) { // Swahili: sign in
+      _tts.speak('Navigating to login');
+      Navigator.pushNamed(context, '/login');
+    }
+    
+    // Sign up / Get Started commands (English & Swahili)
+    else if (command.contains('get started') || 
+             command.contains('sign up') ||
+             command.contains('signup') ||
+             command.contains('register') ||
+             command.contains('create account') ||
+             command.contains('new account') ||
+             command.contains('anza') || // Swahili: start
+             command.contains('jiandikishe') || // Swahili: register
+             command.contains('fungua akaunti')) { // Swahili: open account
+      _tts.speak('Navigating to sign up');
+      Navigator.pushNamed(context, '/signup');
+    }
+    
+    // Accessible login (for PWD users)
+    else if (command.contains('accessible') ||
+             command.contains('accessibility') ||
+             command.contains('voice login') ||
+             command.contains('face login') ||
+             command.contains('disabled')) {
+      _tts.speak('Opening accessible login');
+      Navigator.pushNamed(context, '/accessibleLogin');
+    }
+    
+    // Help command
+    else if (command.contains('help') || 
+             command.contains('options') ||
+             command.contains('msaada')) { // Swahili: help
+      _announceScreen();
+    }
+    
+    // Back command
+    else if (command.contains('back') || 
+             command.contains('go back') ||
+             command.contains('rudi')) { // Swahili: return
+      if (Navigator.canPop(context)) {
+        _tts.speak('Going back');
+        Navigator.pop(context);
+      }
+    }
+    
+    // Unrecognized command
+    else {
+      _tts.speak('Sorry, I did not understand. Say "Log In", "Get Started", or "Help".');
+    }
   }
 
   void _startAutoSlide() {
@@ -66,6 +213,8 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
   void dispose() {
     _timer?.cancel();
     _pageController.dispose();
+    _speech.stop();
+    _tts.stop();
     super.dispose();
   }
 

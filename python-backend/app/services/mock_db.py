@@ -175,6 +175,6 @@ def get_mock_db() -> MockDatabase:
     global _mock_db
     if _mock_db is None:
         _mock_db = MockDatabase()
-        print("📦 Using MOCK DATABASE (Firebase unavailable)")
+        print("[INFO] Using MOCK DATABASE (Firebase unavailable)")
     return _mock_db
 

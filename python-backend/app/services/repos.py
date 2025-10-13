@@ -2,14 +2,17 @@ from __future__ import annotations
 from typing import Any, Optional
 from datetime import datetime, timedelta
 from passlib.context import CryptContext
-from .firebase import get_db, get_bucket
+from .firebase import get_db, get_bucket, is_mock_db
 
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+# Support both argon2 (new) and bcrypt (legacy) for password hashing
+# New passwords use argon2, old bcrypt passwords still work
+pwd_context = CryptContext(schemes=["argon2", "bcrypt"], deprecated="auto")
 
 
-def now_ts() -> datetime:
-    return datetime.utcnow()
+def now_ts():
+    """Return timestamp as ISO format string (universally compatible)"""
+    return datetime.utcnow().isoformat() + "Z"
 
 
 # Users
@@ -61,7 +64,14 @@ class UsersRepo:
 
     @staticmethod
     def verify_password(password: str, password_hash: str) -> bool:
-        return pwd_context.verify(password, password_hash)
+        """Verify password against hash. Returns False for unrecognized hashes."""
+        try:
+            return pwd_context.verify(password, password_hash)
+        except Exception as e:
+            # Hash format not recognized (old/corrupted hash)
+            # Return False instead of crashing
+            print(f"[WARNING] Password hash verification failed: {e}")
+            return False
 
 
 # Wallets
@@ -297,3 +307,5 @@ class CreditRepo:
         CreditRepo.col().document(user_id).set(updates, merge=True)
         doc = CreditRepo.col().document(user_id).get()
         return doc.to_dict() or {}
+
+# Auto-reload trigger: 2025-10-12 08:01:44

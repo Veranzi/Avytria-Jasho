@@ -18,13 +18,13 @@ if not firebase_admin._apps:
         if os.path.exists(cred_path):
             cred = credentials.Certificate(cred_path)
             firebase_admin.initialize_app(cred)
-            print(f"✅ Firebase initialized with service account from: {cred_path}")
+            print(f"[SUCCESS] Firebase initialized with service account from: {cred_path}")
         else:
             # Try default credentials
             firebase_admin.initialize_app()
-            print("✅ Firebase initialized with default credentials")
+            print("[SUCCESS] Firebase initialized with default credentials")
     except Exception as e:
-        print(f"⚠️  Firebase not initialized: {e}")
+        print(f"[WARNING] Firebase not initialized: {e}")
         print(f"   Expected path: {cred_path if 'cred_path' in locals() else 'secrets/service-account.json'}")
         print("   App will run with limited functionality.")
 
@@ -32,12 +32,14 @@ if not firebase_admin._apps:
 def create_app() -> FastAPI:
     app = FastAPI(title=settings.app_name)
 
+    # Configure CORS to allow all origins (including Flutter app)
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=[o.strip() for o in settings.cors_origins.split(",")],
-        allow_credentials=True,
+        allow_origins=["*"],  # Allow all origins
+        allow_credentials=False,  # Must be False when allow_origins is "*"
         allow_methods=["*"],
         allow_headers=["*"],
+        expose_headers=["*"],
     )
     app.add_middleware(GZipMiddleware, minimum_size=1024)
     app.add_middleware(SessionMiddleware, secret_key=settings.jwt_secret)
@@ -45,7 +47,7 @@ def create_app() -> FastAPI:
     # Routers will be included below to match Flutter ApiService endpoints
     from .routers import (
         auth, user, wallet, ai, heatmap, chatbot, credit_score, gamification, 
-        savings, profile_image, cybersecurity, fraud, ratings, notifications, jobs, ussd
+        savings, profile_image, cybersecurity, fraud, ratings, notifications, jobs, ussd, debug
     )
 
     app.include_router(auth.router, prefix=settings.api_prefix + "/auth", tags=["auth"])
@@ -66,6 +68,7 @@ def create_app() -> FastAPI:
     app.include_router(notifications.router, prefix=settings.api_prefix + "/notifications", tags=["notifications"])
     app.include_router(jobs.router, prefix=settings.api_prefix + "/jobs", tags=["jobs"])
     app.include_router(ussd.router, prefix=settings.api_prefix + "/ussd", tags=["ussd"])
+    app.include_router(debug.router, prefix=settings.api_prefix + "/debug", tags=["debug"])
 
     # Static files for uploaded profile images
     app.mount(
@@ -82,3 +85,4 @@ def create_app() -> FastAPI:
 
 
 app = create_app()
+

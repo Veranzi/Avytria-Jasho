@@ -24,215 +24,225 @@ class _ProfileDrawerState extends State<ProfileDrawer> {
 
     return Drawer(
       child: SafeArea(
-        child: SingleChildScrollView( // ✅ prevents vertical overflow
-          child: Column(
-            children: [
-              // Profile image - separate from header, left-aligned
-              Container(
-                padding: const EdgeInsets.all(16),
-                alignment: Alignment.centerLeft,
-                child: const CircleAvatar(
-                  radius: 30,
-                  backgroundColor: Color(0xFF10B981),
-                  child: Icon(Icons.person, size: 40, color: Colors.white),
-                ),
-              ),
-              
-              // Name and work info - separate from image
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      user?.fullName ?? 'User',
-                      style: TextStyle(
-                        fontSize: 18.sp,
-                        fontWeight: FontWeight.bold,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      maxLines: 1,
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final screenWidth = MediaQuery.of(context).size.width;
+            final isSmallScreen = screenWidth < 700;
+            
+            return SingleChildScrollView(
+              child: Column(
+                children: [
+                  // Profile image - separate from header, left-aligned
+                  Container(
+                    padding: EdgeInsets.all(isSmallScreen ? 12.0 : 16.0),
+                    alignment: Alignment.centerLeft,
+                    child: CircleAvatar(
+                      radius: isSmallScreen ? 28 : 32,
+                      backgroundColor: const Color(0xFF10B981),
+                      child: Icon(Icons.person, size: isSmallScreen ? 36 : 42, color: Colors.white),
                     ),
-                    const SizedBox(height: 8),
-                    if ((user?.skills ?? []).isNotEmpty) ...[
-                      Wrap(
-                        spacing: 6,
-                        runSpacing: 6,
+                  ),
+                  
+                  // Name and work info - separate from image
+                  Padding(
+                    padding: EdgeInsets.symmetric(horizontal: isSmallScreen ? 12.0 : 16.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          user?.fullName ?? 'User',
+                          style: TextStyle(
+                            fontSize: isSmallScreen ? 16.0 : 18.0,
+                            fontWeight: FontWeight.bold,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          maxLines: 1,
+                        ),
+                        SizedBox(height: isSmallScreen ? 6 : 8),
+                        if ((user?.skills ?? []).isNotEmpty) ...[
+                          Wrap(
+                            spacing: isSmallScreen ? 4 : 6,
+                            runSpacing: isSmallScreen ? 4 : 6,
+                            children: [
+                              for (final skill in (user!.skills)
+                                  .take(_showAllSkills ? user.skills.length : 1))
+                                Chip(
+                                  label: Text(skill, style: TextStyle(fontSize: isSmallScreen ? 11 : 12)),
+                                  backgroundColor: const Color(0xFFE8F5E9),
+                                  side: const BorderSide(color: Color(0xFF10B981)),
+                                  visualDensity: VisualDensity.compact,
+                                  padding: EdgeInsets.symmetric(horizontal: isSmallScreen ? 6 : 8),
+                                ),
+                              if (!_showAllSkills && user.skills.length > 1)
+                                TextButton(
+                                  onPressed: () => setState(() => _showAllSkills = true),
+                                  child: Text('Show all', style: TextStyle(fontSize: isSmallScreen ? 12 : 13)),
+                                ),
+                              if (_showAllSkills && user.skills.length > 1)
+                                TextButton(
+                                  onPressed: () => setState(() => _showAllSkills = false),
+                                  child: Text('Show fewer', style: TextStyle(fontSize: isSmallScreen ? 12 : 13)),
+                                ),
+                            ],
+                          ),
+                        ],
+                        SizedBox(height: isSmallScreen ? 12 : 16),
+                        const Divider(),
+                      ],
+                    ),
+                  ),
+
+                  // Badges section
+                  if (gamificationProvider.badges.isNotEmpty) ...[
+                    const Divider(),
+                    Padding(
+                      padding: EdgeInsets.all(isSmallScreen ? 12.0 : 16.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          for (final skill in (user!.skills)
-                              .take(_showAllSkills ? user.skills.length : 1))
-                            Chip(
-                              label: Text(skill, style: const TextStyle(fontSize: 12)),
-                              backgroundColor: const Color(0xFFE8F5E9),
-                              side: const BorderSide(color: Color(0xFF10B981)),
-                              visualDensity: VisualDensity.compact,
+                          Text(
+                            'Badges',
+                            style: TextStyle(
+                              fontSize: isSmallScreen ? 14.0 : 16.0,
+                              fontWeight: FontWeight.bold,
                             ),
-                          if (!_showAllSkills && user.skills.length > 1)
-                            TextButton(
-                              onPressed: () => setState(() => _showAllSkills = true),
-                              child: const Text('Show all'),
+                          ),
+                          SizedBox(height: isSmallScreen ? 6 : 8),
+                          SizedBox(
+                            height: isSmallScreen ? 70 : 80,
+                            child: ListView.separated(
+                              scrollDirection: Axis.horizontal,
+                              itemCount: gamificationProvider.badges.length,
+                              separatorBuilder: (_, __) => SizedBox(width: isSmallScreen ? 6 : 8),
+                              itemBuilder: (_, i) {
+                                final badge = gamificationProvider.badges[i];
+                                return Container(
+                                  width: isSmallScreen ? 140 : 160,
+                                  decoration: BoxDecoration(
+                                    color: Colors.grey[50],
+                                    borderRadius: BorderRadius.circular(8),
+                                    border: Border.all(color: Colors.grey[300]!),
+                                  ),
+                                  padding: EdgeInsets.all(isSmallScreen ? 6 : 8),
+                                  child: Row(
+                                    children: [
+                                      Icon(Icons.emoji_events, color: Colors.amber, size: isSmallScreen ? 18 : 20),
+                                      SizedBox(width: isSmallScreen ? 6 : 8),
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          mainAxisAlignment: MainAxisAlignment.center,
+                                          children: [
+                                            Text(
+                                              badge.name,
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                              style: TextStyle(
+                                                fontWeight: FontWeight.bold,
+                                                fontSize: isSmallScreen ? 11 : 12,
+                                              ),
+                                            ),
+                                            Text(
+                                              badge.description,
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                              style: TextStyle(fontSize: isSmallScreen ? 9 : 10),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              },
                             ),
-                          if (_showAllSkills && user.skills.length > 1)
-                            TextButton(
-                              onPressed: () => setState(() => _showAllSkills = false),
-                              child: const Text('Show fewer'),
-                            ),
+                          ),
                         ],
                       ),
-                    ],
-                    const SizedBox(height: 16),
+                    ),
                     const Divider(),
                   ],
-                ),
-              ),
 
-              // Badges section
-              if (gamificationProvider.badges.isNotEmpty) ...[
-                const Divider(),
-                Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Badges',
-                        style: TextStyle(
-                          fontSize: 16.sp,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      SizedBox(
-                        height: 80,
-                        child: ListView.separated(
-                          scrollDirection: Axis.horizontal,
-                          itemCount: gamificationProvider.badges.length,
-                          separatorBuilder: (_, __) => const SizedBox(width: 8),
-                          itemBuilder: (_, i) {
-                            final badge = gamificationProvider.badges[i];
-                            return Container(
-                              width: 160,
-                              decoration: BoxDecoration(
-                                color: Colors.grey[50],
-                                borderRadius: BorderRadius.circular(8),
-                                border: Border.all(color: Colors.grey[300]!),
-                              ),
-                              padding: const EdgeInsets.all(8),
-                              child: Row(
-                                children: [
-                                  const Icon(Icons.emoji_events, color: Colors.amber, size: 20),
-                                  const SizedBox(width: 8),
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      mainAxisAlignment: MainAxisAlignment.center,
-                                      children: [
-                                        Text(
-                                          badge.name,
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
-                                          style: const TextStyle(
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: 12,
-                                          ),
-                                        ),
-                                        Text(
-                                          badge.description,
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
-                                          style: const TextStyle(fontSize: 10),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            );
-                          },
-                        ),
-                      ),
-                    ],
+                  // Community
+                  ListTile(
+                    leading: Icon(Icons.group, color: const Color(0xFF10B981), size: isSmallScreen ? 22 : 24),
+                    title: Text("Community", style: TextStyle(fontSize: isSmallScreen ? 14 : 15)),
+                    onTap: () {
+                      Navigator.pop(context);
+                      Navigator.pushNamed(context, '/community');
+                    },
                   ),
-                ),
-                const Divider(),
-              ],
 
-              // Community
-              ListTile(
-                leading: const Icon(Icons.group, color: Color(0xFF10B981)),
-                title: Text("Community", style: TextStyle(fontSize: 16.sp)),
-                onTap: () {
-                  Navigator.pop(context);
-                  Navigator.pushNamed(context, '/community');
-                },
+                  // Jobs Marketplace
+                  ListTile(
+                    leading: Icon(Icons.work, color: Colors.orange, size: isSmallScreen ? 22 : 24),
+                    title: Text("Jobs Marketplace", style: TextStyle(fontSize: isSmallScreen ? 14 : 15)),
+                    onTap: () {
+                      Navigator.pop(context);
+                      Navigator.pushNamed(context, '/jobs');
+                    },
+                  ),
+
+                  // Update Profile
+                  ListTile(
+                    leading: Icon(Icons.person_outline, color: Colors.teal, size: isSmallScreen ? 22 : 24),
+                    title: Text("Update Profile", style: TextStyle(fontSize: isSmallScreen ? 14 : 15)),
+                    onTap: () {
+                      Navigator.pop(context);
+                      Navigator.pushNamed(context, '/profileUpdate');
+                    },
+                  ),
+
+                  // Change Password
+                  ListTile(
+                    leading: Icon(Icons.lock, color: Colors.deepPurple, size: isSmallScreen ? 22 : 24),
+                    title: Text("Change Password", style: TextStyle(fontSize: isSmallScreen ? 14 : 15)),
+                    onTap: () {
+                      Navigator.pop(context);
+                      Navigator.pushNamed(context, '/changePassword');
+                    },
+                  ),
+
+                  // Help
+                  ListTile(
+                    leading: Icon(Icons.help_outline, color: Colors.green, size: isSmallScreen ? 22 : 24),
+                    title: Text("Help & Support", style: TextStyle(fontSize: isSmallScreen ? 14 : 15)),
+                    onTap: () {
+                      Navigator.pop(context);
+                      Navigator.pushNamed(context, '/help');
+                    },
+                  ),
+
+                  const Divider(),
+
+                  // Language switch
+                  SwitchListTile(
+                    secondary: Icon(Icons.language, color: const Color(0xFF10B981), size: isSmallScreen ? 22 : 24),
+                    title: Text("Language", style: TextStyle(fontSize: isSmallScreen ? 14 : 15)),
+                    subtitle: Text(
+                      isEnglish ? 'English' : 'Swahili',
+                      style: TextStyle(fontSize: isSmallScreen ? 12 : 13),
+                    ),
+                    value: isEnglish,
+                    onChanged: (val) {
+                      final newCode = val ? 'en' : 'sw';
+                      context.read<LocaleProvider>().setLanguage(newCode);
+                    },
+                  ),
+
+                  // Logout
+                  ListTile(
+                    leading: Icon(Icons.logout, color: Colors.red, size: isSmallScreen ? 22 : 24),
+                    title: Text("Logout", style: TextStyle(fontSize: isSmallScreen ? 14 : 15)),
+                    onTap: () {
+                      Navigator.pop(context);
+                      Navigator.pushReplacementNamed(context, '/logout');
+                    },
+                  ),
+                ],
               ),
-
-              // Jobs Marketplace
-              ListTile(
-                leading: const Icon(Icons.work, color: Colors.orange),
-                title: Text("Jobs Marketplace", style: TextStyle(fontSize: 16.sp)),
-                onTap: () {
-                  Navigator.pop(context);
-                  Navigator.pushNamed(context, '/jobs');
-                },
-              ),
-
-              // Update Profile
-              ListTile(
-                leading: const Icon(Icons.person_outline, color: Colors.teal),
-                title: Text("Update Profile", style: TextStyle(fontSize: 16.sp)),
-                onTap: () {
-                  Navigator.pop(context);
-                  Navigator.pushNamed(context, '/profileUpdate');
-                },
-              ),
-
-              // Change Password
-              ListTile(
-                leading: const Icon(Icons.lock, color: Colors.deepPurple),
-                title: Text("Change Password", style: TextStyle(fontSize: 16.sp)),
-                onTap: () {
-                  Navigator.pop(context);
-                  Navigator.pushNamed(context, '/changePassword');
-                },
-              ),
-
-              // Help
-              ListTile(
-                leading: const Icon(Icons.help_outline, color: Colors.green),
-                title: Text("Help & Support", style: TextStyle(fontSize: 16.sp)),
-                onTap: () {
-                  Navigator.pop(context);
-                  Navigator.pushNamed(context, '/help');
-                },
-              ),
-
-              const Divider(),
-
-              // Language switch
-              SwitchListTile(
-                secondary: const Icon(Icons.language, color: Color(0xFF10B981)),
-                title: Text("Language", style: TextStyle(fontSize: 16.sp)),
-                subtitle: Text(isEnglish ? 'English' : 'Swahili',
-                    style: TextStyle(fontSize: 14.sp)),
-                value: isEnglish,
-                onChanged: (val) {
-                  final newCode = val ? 'en' : 'sw';
-                  context.read<LocaleProvider>().setLanguage(newCode);
-                },
-              ),
-
-              // Logout
-              ListTile(
-                leading: const Icon(Icons.logout, color: Colors.red),
-                title: Text("Logout", style: TextStyle(fontSize: 16.sp)),
-                onTap: () {
-                  Navigator.pop(context);
-                  Navigator.pushReplacementNamed(context, '/logout');
-                },
-              ),
-            ],
-          ),
+            );
+          },
         ),
       ),
     );

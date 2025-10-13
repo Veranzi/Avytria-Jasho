@@ -78,17 +78,41 @@ class _AccessibleLoginScreenState extends State<AccessibleLoginScreen> {
   }
 
   Future<void> _initTts() async {
-    // Set Kenyan English or Swahili voice
+    // Set Kenyan English or Swahili voice with FEMININE settings
     if (_selectedLanguage == 'en') {
       await _tts.setLanguage("en-KE"); // Kenyan English
-      await _tts.setVoice({"name": "en-ke-x-kea-network", "locale": "en-KE"}); // Kenyan accent
     } else {
       await _tts.setLanguage("sw-KE"); // Swahili (Kenya)
-      await _tts.setVoice({"name": "sw-ke-x-swa-network", "locale": "sw-KE"});
     }
-    await _tts.setSpeechRate(0.45); // Slightly slower for accessibility
+    
+    // FEMININE VOICE SETTINGS
+    await _tts.setSpeechRate(0.45); // Slower for clarity and accessibility
     await _tts.setVolume(1.0);
-    await _tts.setPitch(1.0);
+    await _tts.setPitch(1.2); // Higher pitch for feminine voice
+    
+    // Try to select a female voice from available voices
+    var voices = await _tts.getVoices;
+    if (voices != null && voices.isNotEmpty) {
+      // Look for female Kenyan voice matching the selected language
+      var femaleVoice = voices.firstWhere(
+        (voice) => 
+          (voice['name'].toString().toLowerCase().contains('female') ||
+           voice['name'].toString().toLowerCase().contains('woman') ||
+           voice['gender']?.toString().toLowerCase() == 'female') &&
+          (voice['locale']?.toString().contains('KE') == true ||
+           voice['locale']?.toString().contains('ke') == true ||
+           (_selectedLanguage == 'sw' && voice['locale']?.toString().contains('sw') == true) ||
+           (_selectedLanguage == 'en' && voice['locale']?.toString().contains('en') == true)),
+        orElse: () => voices.first,
+      );
+      
+      if (femaleVoice != null) {
+        await _tts.setVoice({
+          "name": femaleVoice['name'],
+          "locale": femaleVoice['locale'],
+        });
+      }
+    }
   }
 
   Future<void> _speak(String text) async {

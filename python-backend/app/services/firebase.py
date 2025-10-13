@@ -26,10 +26,10 @@ def init_firebase() -> None:
                 _bucket = storage.bucket(settings.firebase_storage_bucket)
             _initialized = True
             _use_mock = False
-            print("✅ Firebase client connected")
+            print("[SUCCESS] Firebase client connected")
             return
         except Exception as e:
-            print(f"⚠️  Firebase client error: {e}")
+            print(f"[WARNING] Firebase client error: {e}")
     
     # Try to initialize Firebase
     cred_path = settings.firebase_credentials or os.getenv("GOOGLE_APPLICATION_CREDENTIALS")
@@ -47,11 +47,11 @@ def init_firebase() -> None:
             _bucket = storage.bucket(settings.firebase_storage_bucket)
         _initialized = True
         _use_mock = False
-        print("✅ Firebase initialized successfully")
+        print("[SUCCESS] Firebase initialized successfully")
     except Exception as e:
         # Use mock database as fallback
-        print(f"⚠️  Firebase unavailable: {e}")
-        print("📦 Using MOCK DATABASE for development")
+        print(f"[WARNING] Firebase unavailable: {e}")
+        print("[INFO] Using MOCK DATABASE for development")
         _db = get_mock_db()
         _initialized = True
         _use_mock = True

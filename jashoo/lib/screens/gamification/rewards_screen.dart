@@ -38,29 +38,36 @@ class _RewardsScreenState extends State<RewardsScreen> with SingleTickerProvider
   @override
   Widget build(BuildContext context) {
     final g = context.watch<GamificationProvider>();
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isSmallScreen = screenWidth < 700;
+    
     final rewards = const [
       {'name': '100MB Safaricom Data', 'cost': 500, 'type': 'airtime'},
       {'name': 'KES 50 Savings Withdrawal Discount', 'cost': 300, 'type': 'discount'},
       {'name': 'Visibility Boost (3 days)', 'cost': 800, 'type': 'goods'},
       {'name': 'USDT Bonus 1', 'cost': 1000, 'type': 'usdt'},
     ];
+    
     return Scaffold(
-      appBar: AppBar(title: const Text('Rewards Store'), backgroundColor: const Color(0xFF10B981)),
+      appBar: AppBar(
+        title: Text('Rewards Store', style: TextStyle(fontSize: isSmallScreen ? 18 : 20)),
+        backgroundColor: const Color(0xFF10B981),
+      ),
       body: Padding(
-        padding: const EdgeInsets.all(16.0),
+        padding: EdgeInsets.all(isSmallScreen ? 12.0 : 16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _PointsHeader(points: g.points),
-          const SizedBox(height: 16),
+            _PointsHeader(points: g.points, isSmallScreen: isSmallScreen),
+            SizedBox(height: isSmallScreen ? 14 : 16),
             Expanded(
               child: _loading
                   ? GridView.builder(
-                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: 2,
-                        crossAxisSpacing: 12,
-                        mainAxisSpacing: 12,
-                        childAspectRatio: 0.95,
+                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: isSmallScreen ? 1 : 2,
+                        crossAxisSpacing: isSmallScreen ? 10 : 12,
+                        mainAxisSpacing: isSmallScreen ? 10 : 12,
+                        childAspectRatio: isSmallScreen ? 2.0 : 0.95,
                       ),
                       itemCount: 6,
                       itemBuilder: (_, __) => const Skeleton(height: 160),
@@ -68,24 +75,25 @@ class _RewardsScreenState extends State<RewardsScreen> with SingleTickerProvider
                   : FadeTransition(
                       opacity: _fade,
                       child: GridView.builder(
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 2,
-                  crossAxisSpacing: 12,
-                  mainAxisSpacing: 12,
-                  childAspectRatio: 0.95,
-                ),
-                itemCount: rewards.length,
-                itemBuilder: (_, i) {
-                  final r = rewards[i];
-                  final canRedeem = g.points >= (r['cost'] as int);
-                  return _RewardCard(
-                    name: r['name'].toString(),
-                    cost: r['cost'] as int,
-                    icon: _iconForType(r['type'] as String),
-                    canRedeem: canRedeem,
-                    onRedeem: canRedeem ? () => g.redeemPoints(r['cost'] as int) : null,
-                  );
-                },
+                        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: isSmallScreen ? 1 : 2,
+                          crossAxisSpacing: isSmallScreen ? 10 : 12,
+                          mainAxisSpacing: isSmallScreen ? 10 : 12,
+                          childAspectRatio: isSmallScreen ? 2.0 : 0.95,
+                        ),
+                        itemCount: rewards.length,
+                        itemBuilder: (_, i) {
+                          final r = rewards[i];
+                          final canRedeem = g.points >= (r['cost'] as int);
+                          return _RewardCard(
+                            name: r['name'].toString(),
+                            cost: r['cost'] as int,
+                            icon: _iconForType(r['type'] as String),
+                            canRedeem: canRedeem,
+                            onRedeem: canRedeem ? () => g.redeemPoints(r['cost'] as int) : null,
+                            isSmallScreen: isSmallScreen,
+                          );
+                        },
                       ),
                     ),
             ),
@@ -98,7 +106,8 @@ class _RewardsScreenState extends State<RewardsScreen> with SingleTickerProvider
 
 class _PointsHeader extends StatelessWidget {
   final int points;
-  const _PointsHeader({required this.points});
+  final bool isSmallScreen;
+  const _PointsHeader({required this.points, required this.isSmallScreen});
 
   @override
   Widget build(BuildContext context) {
@@ -108,27 +117,123 @@ class _PointsHeader extends StatelessWidget {
         gradient: const LinearGradient(colors: [Color(0xFF10B981), Color(0xFF34D399)]),
         borderRadius: BorderRadius.circular(16),
       ),
-      padding: const EdgeInsets.all(16),
-            child: Row(
+      padding: EdgeInsets.all(isSmallScreen ? 14.0 : 16.0),
+      child: Row(
         children: [
-          const Icon(Icons.workspace_premium, color: Colors.white),
-          const SizedBox(width: 12),
+          Icon(Icons.workspace_premium, color: Colors.white, size: isSmallScreen ? 28 : 32),
+          SizedBox(width: isSmallScreen ? 10 : 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                      Text('Your balance', style: TextStyle(color: Colors.white70, fontSize: 12.sp)),
-                      Text('$points pts', style: TextStyle(color: Colors.white, fontSize: 22.sp, fontWeight: FontWeight.bold)),
+                Text(
+                  'Your balance',
+                  style: TextStyle(
+                    color: Colors.white70,
+                    fontSize: isSmallScreen ? 12 : 13,
+                  ),
+                ),
+                Text(
+                  '$points pts',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: isSmallScreen ? 20 : 24,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
               ],
             ),
           ),
           OutlinedButton(
-            style: OutlinedButton.styleFrom(foregroundColor: Colors.white, side: const BorderSide(color: Colors.white70)),
-            onPressed: () {},
-                  child: Text('How it works', style: TextStyle(fontSize: 12.sp)),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: Colors.white,
+              side: const BorderSide(color: Colors.white70),
+              padding: EdgeInsets.symmetric(
+                horizontal: isSmallScreen ? 10 : 12,
+                vertical: isSmallScreen ? 8 : 10,
+              ),
+            ),
+            onPressed: () {
+              _showHowItWorks(context, isSmallScreen);
+            },
+            child: Text(
+              'How it works',
+              style: TextStyle(fontSize: isSmallScreen ? 11 : 12),
+            ),
           )
         ],
       ),
+    );
+  }
+  
+  void _showHowItWorks(BuildContext context, bool isSmallScreen) {
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Text(
+          'How Points Work',
+          style: TextStyle(fontSize: isSmallScreen ? 18 : 20),
+        ),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _InfoRow(
+                icon: Icons.savings,
+                text: 'Earn points by saving money',
+                isSmallScreen: isSmallScreen,
+              ),
+              SizedBox(height: isSmallScreen ? 10 : 12),
+              _InfoRow(
+                icon: Icons.work_outline,
+                text: 'Complete jobs to earn points',
+                isSmallScreen: isSmallScreen,
+              ),
+              SizedBox(height: isSmallScreen ? 10 : 12),
+              _InfoRow(
+                icon: Icons.star,
+                text: 'Redeem points for rewards',
+                isSmallScreen: isSmallScreen,
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF10B981),
+            ),
+            child: Text('Got it', style: TextStyle(fontSize: isSmallScreen ? 14 : 15)),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _InfoRow extends StatelessWidget {
+  final IconData icon;
+  final String text;
+  final bool isSmallScreen;
+  
+  const _InfoRow({required this.icon, required this.text, required this.isSmallScreen});
+  
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Icon(icon, color: const Color(0xFF10B981), size: isSmallScreen ? 20 : 22),
+        SizedBox(width: isSmallScreen ? 10 : 12),
+        Expanded(
+          child: Text(
+            text,
+            style: TextStyle(fontSize: isSmallScreen ? 13 : 14),
+          ),
+        ),
+      ],
     );
   }
 }
@@ -139,33 +244,95 @@ class _RewardCard extends StatelessWidget {
   final IconData icon;
   final bool canRedeem;
   final VoidCallback? onRedeem;
-  const _RewardCard({required this.name, required this.cost, required this.icon, required this.canRedeem, required this.onRedeem});
+  final bool isSmallScreen;
+  
+  const _RewardCard({
+    required this.name,
+    required this.cost,
+    required this.icon,
+    required this.canRedeem,
+    required this.onRedeem,
+    required this.isSmallScreen,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
+        color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Theme.of(context).dividerColor.withAlpha(51)),
+        border: Border.all(color: Colors.grey.shade200),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.1),
+            blurRadius: 8,
+            offset: const Offset(0, 3),
+          ),
+        ],
       ),
-      padding: const EdgeInsets.all(12),
+      padding: EdgeInsets.all(isSmallScreen ? 12.0 : 14.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Icon(icon, color: Theme.of(context).colorScheme.primary),
-              const SizedBox(width: 8),
-              Expanded(child: Text(name, maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.bold))),
+              Container(
+                padding: EdgeInsets.all(isSmallScreen ? 8 : 10),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF10B981).withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(
+                  icon,
+                  color: const Color(0xFF10B981),
+                  size: isSmallScreen ? 22 : 24,
+                ),
+              ),
+              SizedBox(width: isSmallScreen ? 10 : 12),
+              Expanded(
+                child: Text(
+                  name,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: isSmallScreen ? 14 : 15,
+                  ),
+                ),
+              ),
             ],
           ),
           const Spacer(),
           Row(
             children: [
-              Text('$cost pts', style: const TextStyle(fontWeight: FontWeight.bold)),
-              const Spacer(),
-              ElevatedButton(onPressed: onRedeem, child: const Text('Redeem')),
+              Expanded(
+                child: Text(
+                  '$cost pts',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: isSmallScreen ? 15 : 16,
+                    color: const Color(0xFF10B981),
+                  ),
+                ),
+              ),
+              ElevatedButton(
+                onPressed: onRedeem,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: canRedeem ? const Color(0xFF10B981) : Colors.grey,
+                  foregroundColor: Colors.white,
+                  padding: EdgeInsets.symmetric(
+                    horizontal: isSmallScreen ? 12 : 16,
+                    vertical: isSmallScreen ? 8 : 10,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+                child: Text(
+                  'Redeem',
+                  style: TextStyle(fontSize: isSmallScreen ? 12 : 13),
+                ),
+              ),
             ],
           )
         ],

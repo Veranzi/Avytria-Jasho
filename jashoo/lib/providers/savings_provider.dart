@@ -8,6 +8,9 @@ class SavingsGoal {
   double saved;
   DateTime? dueDate;
   String? hustle; // optional hustle attribution
+  bool isStandingOrder; // Is this a standing order (automatic) or voluntary
+  double autoDeductAmount; // Amount to auto-deduct for standing orders
+  String frequency; // Daily, Weekly, Monthly
 
   SavingsGoal({
     required this.id,
@@ -16,6 +19,9 @@ class SavingsGoal {
     this.saved = 0,
     this.dueDate,
     this.hustle,
+    this.isStandingOrder = false,
+    this.autoDeductAmount = 0.0,
+    this.frequency = 'Weekly',
   });
 }
 

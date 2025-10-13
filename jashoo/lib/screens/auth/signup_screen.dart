@@ -8,6 +8,7 @@ import 'package:permission_handler/permission_handler.dart';
 import 'dart:io';
 import 'package:path_provider/path_provider.dart';
 import '../../services/api_service.dart';
+import '../../services/voice_permission_service.dart';
 
 class SignupScreen extends StatefulWidget {
   const SignupScreen({super.key});
@@ -91,8 +92,9 @@ class _SignupScreenState extends State<SignupScreen> {
   @override
   void initState() {
     super.initState();
-    _initSpeech();
     _initTts();
+    // Start listening for voice commands to trigger enrollment
+    _startEnrollmentListener();
   }
 
   @override
@@ -103,7 +105,90 @@ class _SignupScreenState extends State<SignupScreen> {
     passwordController.dispose();
     confirmPasswordController.dispose();
     otherHustleController.dispose();
+    _speech.stop();
     super.dispose();
+  }
+
+  /// Always-on voice listener for enrollment commands
+  /// Listens for: "enroll voice", "enroll face", "yes voice", "yes face"
+  Future<void> _startEnrollmentListener() async {
+    // Wait a bit for UI to load
+    await Future.delayed(const Duration(seconds: 1));
+    
+    // Initialize speech if not already done
+    if (!_speechEnabled) {
+      final status = await Permission.microphone.status;
+      if (status.isGranted) {
+        _speechEnabled = await _speech.initialize(
+          onError: (error) => print('Speech error: $error'),
+          onStatus: (status) {
+            if (status == 'done' && mounted) {
+              // Restart listening after each command
+              Future.delayed(const Duration(milliseconds: 500), () {
+                if (mounted && _voiceStatus != 'Enrolled' || _faceStatus != 'Enrolled') {
+                  _startEnrollmentListener();
+                }
+              });
+            }
+          },
+        );
+      }
+    }
+    
+    if (!_speechEnabled || !mounted) return;
+    
+    // Announce that voice commands are ready
+    if (_voiceStatus != 'Enrolled' || _faceStatus != 'Enrolled') {
+      await _speak('You can say "enroll voice" or "enroll face" to start enrollment without tapping buttons.');
+    }
+    
+    // Listen for enrollment commands
+    _speech.listen(
+      onResult: (result) {
+        if (result.finalResult) {
+          final command = result.recognizedWords.toLowerCase();
+          print('Heard command: $command');
+          
+          // Voice enrollment triggers (English & Swahili)
+          if ((command.contains('enroll voice') || 
+               command.contains('voice recognition') ||
+               command.contains('yes voice') ||
+               command.contains('start voice') ||
+               command.contains('sajili sauti') || // Swahili: enroll voice
+               command.contains('sauti') || // Swahili: voice
+               (command.contains('enroll') && command.contains('voice'))) &&
+              _voiceStatus != 'Enrolled') {
+            _speak('Starting voice enrollment');
+            _enrollVoice();
+          }
+          
+          // Face enrollment triggers (English & Swahili)
+          else if ((command.contains('enroll face') || 
+                    command.contains('face recognition') ||
+                    command.contains('yes face') ||
+                    command.contains('start face') ||
+                    command.contains('sajili uso') || // Swahili: enroll face
+                    command.contains('uso') || // Swahili: face
+                    (command.contains('enroll') && command.contains('face'))) &&
+                   _faceStatus != 'Enrolled') {
+            _speak('Starting face enrollment');
+            _enrollFace();
+          }
+          
+          // Generic "yes" when showing enrollment section
+          else if ((command.contains('yes') || command.contains('ndiyo')) && 
+                   (_voiceStatus != 'Enrolled' || _faceStatus != 'Enrolled')) {
+            _speak('Which enrollment? Say "enroll voice" or "enroll face"');
+          }
+        }
+      },
+      localeId: 'en_KE',
+      listenFor: const Duration(seconds: 30),
+      pauseFor: const Duration(seconds: 2),
+      onSoundLevelChange: (level) {
+        // Visual feedback could be added here
+      },
+    );
   }
 
   Future<void> _initSpeech() async {
@@ -113,7 +198,9 @@ class _SignupScreenState extends State<SignupScreen> {
         onError: (error) => print('Speech error: $error'),
         onStatus: (status) {
           if (status == 'done') {
-            setState(() => _isListening = false);
+            if (mounted) {
+              setState(() => _isListening = false);
+            }
           }
         },
       );
@@ -121,10 +208,35 @@ class _SignupScreenState extends State<SignupScreen> {
   }
 
   Future<void> _initTts() async {
-    await _tts.setLanguage("en-US");
-    await _tts.setSpeechRate(0.5);
+    // Set language with Kenyan accent
+    await _tts.setLanguage("en-KE");
+    
+    // Feminine voice settings
+    await _tts.setSpeechRate(0.45); // Slightly slower for clarity
     await _tts.setVolume(1.0);
-    await _tts.setPitch(1.0);
+    await _tts.setPitch(1.2); // Higher pitch for feminine voice
+    
+    // Try to set a female voice if available
+    var voices = await _tts.getVoices;
+    if (voices != null && voices.isNotEmpty) {
+      // Look for female Kenyan voice
+      var femaleVoice = voices.firstWhere(
+        (voice) => 
+          (voice['name'].toString().toLowerCase().contains('female') ||
+           voice['name'].toString().toLowerCase().contains('woman') ||
+           voice['gender']?.toString().toLowerCase() == 'female') &&
+          (voice['locale']?.toString().contains('KE') == true ||
+           voice['locale']?.toString().contains('ke') == true),
+        orElse: () => voices.first,
+      );
+      
+      if (femaleVoice != null) {
+        await _tts.setVoice({
+          "name": femaleVoice['name'],
+          "locale": femaleVoice['locale'],
+        });
+      }
+    }
   }
 
   Future<void> _speak(String text) async {
@@ -132,14 +244,31 @@ class _SignupScreenState extends State<SignupScreen> {
   }
 
   Future<void> _enrollVoice() async {
-    if (!_speechEnabled) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Speech recognition not available. Please enable microphone permission.')),
-      );
+    // Voice-controlled permission request (Siri-style!)
+    final voiceService = VoicePermissionService();
+    await voiceService.initialize();
+    
+    // Request microphone with voice prompts - user just says "yes" or "no"!
+    final granted = await voiceService.requestMicrophoneWithVoice(language: 'en');
+    
+    if (!granted) {
+      // Permission denied
       return;
     }
+    
+    // Permission granted - initialize speech
+    if (!_speechEnabled) {
+      _speechEnabled = await _speech.initialize(
+        onError: (error) => print('Speech error: $error'),
+        onStatus: (status) {
+          if (status == 'done' && mounted) {
+            setState(() => _isListening = false);
+          }
+        },
+      );
+    }
 
-    await _speak('Voice enrollment started. Please say: My voice is my password. Repeat this phrase three times.');
+    await _speak('Voice enrollment started. Please say: My voice is my password. Repeat this phrase three times for secure enrollment.');
     
     setState(() => _isListening = true);
     
@@ -151,36 +280,46 @@ class _SignupScreenState extends State<SignupScreen> {
     final voiceFile = File('${directory.path}/voice_print_${DateTime.now().millisecondsSinceEpoch}.dat');
     await voiceFile.writeAsString('VOICE_PRINT_DATA_PLACEHOLDER'); // In production, store actual voice biometric data
     
-    setState(() {
-      _voiceStatus = 'Enrolled';
-      _voicePrintPath = voiceFile.path;
-      _isListening = false;
-    });
+    if (mounted) {
+      setState(() {
+        _voiceStatus = 'Enrolled';
+        _voicePrintPath = voiceFile.path;
+        _isListening = false;
+      });
+    }
     
-    await _speak('Voice enrollment successful');
+    await _speak('Excellent! Voice enrollment successful. Your voice is now registered for secure authentication.');
     
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Voice biometric enrolled successfully!'),
-        backgroundColor: Color(0xFF10B981),
-      ),
-    );
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Voice biometric enrolled successfully!'),
+          backgroundColor: Color(0xFF10B981),
+        ),
+      );
+    }
   }
 
   Future<void> _enrollFace() async {
-    final status = await Permission.camera.request();
-    if (!status.isGranted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Camera permission required for face enrollment')),
-      );
+    // Voice-controlled permission request (Siri-style!)
+    final voiceService = VoicePermissionService();
+    await voiceService.initialize();
+    
+    // Request camera with voice prompts - user just says "yes" or "no"!
+    final granted = await voiceService.requestCameraWithVoice(language: 'en');
+    
+    if (!granted) {
+      // Permission denied
       return;
     }
-
-    await _speak('Opening camera for face enrollment');
+    
+    // Permission granted!
+    await _speak('Permission granted. Opening camera for face enrollment. Please position your face in the center of the screen.');
 
     try {
       final cameras = await availableCameras();
       if (cameras.isEmpty) {
+        await _speak('No camera available on this device');
         throw Exception('No camera available');
       }
 
@@ -199,25 +338,103 @@ class _SignupScreenState extends State<SignupScreen> {
       );
 
       if (result != null && result is File) {
-        setState(() {
-          _capturedFaceImage = result;
-          _faceStatus = 'Enrolled';
-        });
+        if (mounted) {
+          setState(() {
+            _capturedFaceImage = result;
+            _faceStatus = 'Enrolled';
+          });
+        }
 
-        await _speak('Face enrollment successful');
+        await _speak('Perfect! Face enrollment successful. Your face is now registered for secure authentication.');
 
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Face biometric enrolled successfully!'),
-            backgroundColor: Color(0xFF10B981),
-          ),
-        );
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Face biometric enrolled successfully!'),
+              backgroundColor: Color(0xFF10B981),
+            ),
+          );
+        }
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Face enrollment failed: $e')),
-      );
+      await _speak('Face enrollment failed. Please try again.');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Face enrollment failed: $e')),
+        );
+      }
     }
+  }
+  
+  void _showPermissionDialog(String permissionName, Permission permission, {bool isPermanent = false}) {
+    if (!mounted) return;
+    
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(
+          children: [
+            const Icon(Icons.warning_amber_rounded, color: Colors.orange, size: 28),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                '$permissionName Permission Required',
+                style: const TextStyle(fontSize: 18),
+              ),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              isPermanent
+                  ? 'This app needs $permissionName permission for accessibility features. Please enable it in your device settings.'
+                  : '$permissionName access is required for enrollment. Would you like to grant permission?',
+              style: const TextStyle(fontSize: 14),
+            ),
+            const SizedBox(height: 12),
+            if (!isPermanent)
+              const Text(
+                '• Voice enrollment requires microphone\n• Face enrollment requires camera\n• These features are optional but enhance security',
+                style: TextStyle(fontSize: 12, color: Colors.grey),
+              ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              _speak('Permission request cancelled');
+            },
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.pop(context);
+              if (isPermanent) {
+                await _speak('Opening settings. Please enable $permissionName permission and return to this app.');
+                await openAppSettings();
+              } else {
+                await _speak('Requesting permission again');
+                final newStatus = await permission.request();
+                if (newStatus.isGranted) {
+                  await _speak('Permission granted. You may now try enrollment again.');
+                } else {
+                  await _speak('Permission not granted. Enrollment cannot proceed.');
+                }
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF10B981),
+            ),
+            child: Text(isPermanent ? 'Open Settings' : 'Grant Permission'),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -517,6 +734,48 @@ class _SignupScreenState extends State<SignupScreen> {
                           style: TextStyle(
                             fontSize: isSmallScreen ? 11 : 12,
                             color: Colors.grey[700],
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        // Voice command hint
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF10B981).withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
+                              color: const Color(0xFF10B981).withOpacity(0.3),
+                              width: 1,
+                            ),
+                          ),
+                          child: Row(
+                            children: [
+                              const Icon(
+                                Icons.mic_rounded,
+                                color: Color(0xFF10B981),
+                                size: 16,
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  'Say "Enroll Voice" or "Enroll Face" to start without tapping!',
+                                  style: TextStyle(
+                                    fontSize: isSmallScreen ? 10 : 11,
+                                    color: const Color(0xFF10B981),
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ),
+                              if (_speechEnabled)
+                                Container(
+                                  width: 8,
+                                  height: 8,
+                                  decoration: const BoxDecoration(
+                                    color: Color(0xFF10B981),
+                                    shape: BoxShape.circle,
+                                  ),
+                                ),
+                            ],
                           ),
                         ),
                         const SizedBox(height: 12),

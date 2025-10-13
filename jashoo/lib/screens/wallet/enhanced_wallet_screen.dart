@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../../providers/wallet_provider.dart';
 import '../../services/api_service.dart';
 import 'package:flutter_stripe/flutter_stripe.dart';
+import '../../widgets/voice_assistant_button.dart';
 
 class EnhancedWalletScreen extends StatefulWidget {
   const EnhancedWalletScreen({super.key});
@@ -226,6 +227,7 @@ class _EnhancedWalletScreenState extends State<EnhancedWalletScreen> {
           ),
         ),
       ),
+      floatingActionButton: const VoiceAssistantButton(), // Voice navigation for PWD users
     );
   }
 

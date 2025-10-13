@@ -1,179 +1,220 @@
-# 🚀 Quick Start Guide - Jasho App
+# 🚀 QUICK START GUIDE - Your Updated Jasho App
 
-## ✅ What Was Just Implemented
-
-### 1. Voice Permission Requests (Accessibility)
-- App now asks for microphone/camera permissions **using voice**
-- Designed for users with disabilities
-- Available in **English and Swahili**
-
-### 2. Language Selection
-- Users choose language **before login**
-- Say "English" or "Swahili" to select
-- Voice commands work in both languages
-
-### 3. Kenyan Voice Accent
-- Text-to-Speech uses **Kenyan English** (`en-KE`)
-- Swahili uses **Kenyan Swahili** (`sw-KE`)
-- Speech rate optimized for accessibility
-
-### 4. Responsive Design
-- All font sizes normalized across the app
-- **Login screen**: Title reduced to 26px
-- **Signup screen**: Title responsive (22-26px)
-- **Buttons**: All text is 16px with font-weight 600
-- Adapts to different screen sizes
-
-### 5. Biometric Authentication
-- **Voice enrollment** during signup (like Siri)
-- **Face enrollment** during signup
-- **Biometric login** option available
-- Data stored in Python backend
-
-### 6. Backend Integration
-- Python FastAPI endpoints ready
-- `/auth/register` - accepts biometric data
-- `/auth/biometric-login` - voice/face login
-- Full communication between Flutter ↔ Python
+## ✅ ALL 8 FEATURES COMPLETE!
 
 ---
 
-## 🏃 How to Run
+## 🎯 **What's New:**
 
-### Start Backend (Python)
-```bash
+### 1️⃣ **Reward Store** - Beautiful & Responsive
+- Harmonized font sizes (matches registration page)
+- Fully responsive (mobile to desktop)
+- "How it works" dialog
+- Beautiful card design with icons
+
+### 2️⃣ **Chatbot** - Smart Voice Assistant
+- 🎤 **Feminine voice** (Kenyan accent)
+- 🗣️ Speech-to-text (tap mic to speak)
+- 🔊 Text-to-speech (voice responses)
+- 🌍 Language switch (English ↔ Swahili)
+- 📱 Fully responsive
+- 🧠 Comprehensive knowledge base
+
+### 3️⃣ **Wallet** - Secure Balance Display
+- 👁️ Balances masked by default
+- 🔒 Password verification to view
+- ⏱️ Auto-hide after 30 seconds
+- 🎨 Consistent design
+
+### 4️⃣ **Marketplace** - Professional Job Listings
+- 📐 Harmonized font sizes
+- 📱 Fully responsive
+- 💼 Beautiful job cards
+- 🎯 Clear call-to-action buttons
+
+### 5️⃣ **Review System** - Rate Job Posters
+- ⭐ Strictly 0-5 stars (exactly 6 options)
+- 💬 Comment field
+- ✅ "Review submitted" confirmation
+- 💾 Saved to database
+
+### 6️⃣ **Feminine Voice** - PWD-Friendly
+- 🎵 Higher pitch (1.2) for feminine sound
+- 🗣️ Slower speech rate (0.45) for clarity
+- 🇰🇪 Kenyan accent (en-KE, sw-KE)
+- 🌍 Swahili voice support
+
+### 7️⃣ **Voice-Controlled Permissions** - For PWDs
+- 🎙️ Microphone permission via voice
+- 📷 Camera permission via voice
+- 🗣️ Spoken instructions throughout
+- ⚙️ Opens settings if denied
+
+### 8️⃣ **Sign Up Biometrics** - Enhanced
+- 🎤 Voice enrollment with guidance
+- 📷 Face enrollment with guidance
+- 🔊 All instructions spoken aloud
+- ✅ Status indicators (enrolled/not enrolled)
+
+---
+
+## 🏃 **HOW TO RUN:**
+
+### **Step 1: Start Backend**
+```powershell
 cd python-backend
-python -m uvicorn app.main:app --reload --port 8000
+.\START_BACKEND.ps1
 ```
+**Wait for:** `INFO: Application startup complete.`
 
-### Start Frontend (Flutter)
-```bash
+### **Step 2: Start Flutter App**
+```powershell
 cd jashoo
+flutter pub get
 flutter run
 ```
 
 ---
 
-## 📱 Testing the Accessibility Features
+## 🧪 **QUICK TESTS:**
 
-### Test Language Selection
-1. Open app → Go to Login
-2. Tap "Accessible Login" button
-3. **Listen** - App will ask for language in both English & Swahili
-4. **Say**: "English" or "Swahili"
-5. App confirms selection and proceeds
+### **Test Voice Features:**
+1. Open **Support** > **Chatbot**
+2. Tap the **speaker icon** (top right) to enable voice mode
+3. Tap the **microphone** button and speak
+4. Listen to the **feminine voice** respond
+5. Tap the **globe icon** to switch to Swahili
+6. Speak in Swahili and hear Swahili responses
 
-### Test Voice Permission
-1. After selecting language
-2. **Listen** - App will ask for microphone permission via voice
-3. Allow permission when prompted
-4. App confirms and is ready for voice login
+### **Test Wallet Masking:**
+1. Open **Wallet**
+2. See masked balance: `KES ****`
+3. Tap the **eye icon** (top right)
+4. Enter your password
+5. Balance reveals for 30 seconds
+6. Automatically hides again
 
-### Test Biometric Enrollment (Signup)
-1. Go to Signup screen
-2. Scroll down to **"Accessibility Features"** section
-3. Tap "Enroll" next to **Voice Recognition**
-   - Listen to instructions
-   - Say the passphrase 3 times
-   - Status changes to "Enrolled" ✓
-4. Tap "Enroll" next to **Face Recognition**
-   - App asks for camera permission via voice
-   - Allow permission
-   - Position face in center
-   - Tap "Capture Face"
-   - Status changes to "Enrolled" ✓
+### **Test Marketplace:**
+1. Open **Jobs** section
+2. See 3 job listings
+3. Notice consistent font sizes
+4. Tap **View Details** on any job
+5. Complete job flow: Apply → Complete → Mark Paid → Review
+6. Submit a 0-5 star review with comment
 
----
+### **Test Sign Up Biometrics:**
+1. Go to **Sign Up** (or create new account)
+2. Scroll to **"Inclusivity Section"**
+3. Tap **"Enroll Voice"**
+4. **Listen to feminine voice** guide you
+5. Grant microphone permission when asked
+6. Follow voice instructions
+7. Hear **"Voice enrollment successful"**
+8. Tap **"Enroll Face"**
+9. Grant camera permission when asked
+10. Capture your face
+11. Hear **"Face enrollment successful"**
 
-## 🎨 Design Updates
-
-### Brand Color: `#10B981` (Green)
-- Used consistently across all screens
-- Consent sections themed with brand color
-- All buttons and borders match
-
-### Font Sizes (Normalized)
-| Element | Old Size | New Size | Notes |
-|---------|----------|----------|-------|
-| Login Title | 30sp | 26px | Fixed size |
-| Signup Title | 32sp | 22-26px | Responsive |
-| Button Text | 18sp | 16px | All buttons |
-| Body Text | Varied | 13-16px | Responsive |
-
----
-
-## 🔥 Key Features
-
-### For Users with Disabilities
-✅ Voice-first interface  
-✅ Audio feedback for all actions  
-✅ Large touch targets (100-120px buttons)  
-✅ High contrast colors  
-✅ Simple, clear instructions  
-✅ No password required (biometric option)  
-
-### For Kenyan Users
-✅ Kenyan English accent  
-✅ Swahili language support  
-✅ Localized messages  
-✅ Cultural relevance  
-
-### For All Users
-✅ Responsive design  
-✅ Consistent branding  
-✅ Modern UI/UX  
-✅ Smooth animations  
+### **Test Rewards Store:**
+1. Open **Gamification** > **Rewards**
+2. See your points balance
+3. Tap **"How it works"** button
+4. Browse reward cards
+5. Try redeeming (if you have enough points)
 
 ---
 
-## 📊 Backend API Endpoints
+## 🎨 **Design Highlights:**
 
-### Register with Biometrics
-```http
-POST /auth/register
-Content-Type: application/json
+- **Theme Color:** `#10B981` (brand green)
+- **Font Sizes:** 11-26px (responsive)
+- **Voice Pitch:** 1.2 (feminine)
+- **Speech Rate:** 0.45 (clear & slow)
+- **Languages:** English (en-KE), Swahili (sw-KE)
 
-{
-  "email": "user@example.com",
-  "password": "SecurePass123!",
-  "fullName": "John Doe",
-  "phoneNumber": "+254712345678",
-  "location": "Nairobi",
-  "voiceBiometric": "base64_encoded_voice_data",
-  "faceBiometric": "base64_encoded_face_image",
-  "hasBiometricAuth": true
-}
+---
+
+## 🔊 **Voice Commands You Can Try:**
+
+### **In Chatbot:**
+- "Tell me about savings"
+- "How do I post a job?"
+- "What is KYC?"
+- "Explain insurance"
+- "How do reviews work?"
+- "Tell me about the wallet"
+
+### **In Swahili:**
+- "Niambie kuhusu akiba"
+- "Ninaweza kuweka kazi vipi?"
+- "KYC ni nini?"
+- "Eleza bima"
+
+---
+
+## 🐛 **Troubleshooting:**
+
+### **Backend not responding (503 error):**
+```powershell
+# Stop backend (CTRL+C)
+# Restart it:
+cd python-backend
+.\START_BACKEND.ps1
 ```
 
-### Biometric Login
-```http
-POST /auth/biometric-login
-Content-Type: application/json
-
-{
-  "phoneNumber": "+254712345678",
-  "biometricType": "voice",
-  "biometricData": "base64_encoded_voice_data"
-}
+### **Flutter errors:**
+```powershell
+cd jashoo
+flutter clean
+flutter pub get
+flutter run
 ```
 
----
+### **Voice not working:**
+1. Check microphone permissions in device settings
+2. Enable microphone in app permissions
+3. Restart the app
 
-## ✨ What's Next?
-
-Your app now has:
-1. ✅ Full accessibility for people with disabilities
-2. ✅ English & Swahili language support
-3. ✅ Voice & Face biometric authentication
-4. ✅ Responsive design for all screen sizes
-5. ✅ Backend-frontend integration complete
-6. ✅ Kenyan-specific voice accents
-7. ✅ Normalized, consistent UI
-
-### Ready to Test!
-Run the app and try the accessible login feature! 🎉
+### **Face enrollment not working:**
+1. Check camera permissions in device settings
+2. Enable camera in app permissions
+3. Restart the app
+4. Make sure you have a camera (or emulator has camera enabled)
 
 ---
 
-**Need Help?** Check `ACCESSIBILITY_AND_LOCALIZATION_SUMMARY.md` for detailed technical documentation.
+## 📁 **Files Modified:**
 
+1. `jashoo/lib/screens/gamification/rewards_screen.dart`
+2. `jashoo/lib/screens/support/enhanced_chatbot_screen.dart`
+3. `jashoo/lib/screens/dashboard/jobs.dart`
+4. `jashoo/lib/screens/auth/signup_screen.dart`
+
+**All files:** ✅ No linter errors!
+
+---
+
+## 🎉 **READY TO USE!**
+
+Your Jasho app now has:
+- ✅ Beautiful, responsive UI
+- ✅ Feminine voice assistant
+- ✅ Full Swahili support
+- ✅ Voice-controlled permissions
+- ✅ Secure wallet masking
+- ✅ Professional job marketplace
+- ✅ Complete review system
+- ✅ PWD-friendly accessibility
+
+**Enjoy your enhanced app! 🚀**
+
+---
+
+## 📞 **Need More Help?**
+
+Check these files:
+- `UPDATES_COMPLETE.md` - Detailed technical documentation
+- `FIX_BACKEND_NOW.md` - Backend restart instructions (if needed)
+- `START_APP.md` - Comprehensive startup guide
+
+**Happy coding! 🎊**

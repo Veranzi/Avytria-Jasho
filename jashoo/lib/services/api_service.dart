@@ -1053,6 +1053,46 @@ class ApiService {
   }) async {
     return await _makeRequest('GET', '/user/access-logs?page=$page&limit=$limit');
   }
+  
+  // Ratings endpoints
+  Future<Map<String, dynamic>> submitRating({
+    required String jobId,
+    required double rating,
+    String? comment,
+  }) async {
+    return await _makeRequest('POST', '/ratings/submit', body: {
+      'jobId': jobId,
+      'rating': rating,
+      if (comment != null && comment.isNotEmpty) 'comment': comment,
+    });
+  }
+  
+  Future<Map<String, dynamic>> getRatingsForJob(String jobId) async {
+    return await _makeRequest('GET', '/ratings/job/$jobId');
+  }
+  
+  Future<Map<String, dynamic>> getUserRatings(String userId) async {
+    return await _makeRequest('GET', '/ratings/user/$userId');
+  }
+  
+  // Insurance endpoints
+  Future<Map<String, dynamic>> applyForInsurance({
+    required String category,
+    required String provider,
+    required String premium,
+  }) async {
+    return await _makeRequest('POST', '/insurance/apply', body: {
+      'category': category,
+      'provider': provider,
+      'premium': premium,
+      'appliedAt': DateTime.now().toIso8601String(),
+      'status': 'pending',
+    });
+  }
+  
+  Future<Map<String, dynamic>> getInsuranceApplications() async {
+    return await _makeRequest('GET', '/insurance/my-applications');
+  }
 }
 
 // Custom exception class for API errors

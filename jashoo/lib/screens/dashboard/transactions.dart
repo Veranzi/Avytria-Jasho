@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
+import 'package:provider/provider.dart';
+import '../../providers/wallet_provider.dart';
+import 'dart:async';
 
 class TransactionHistoryScreen extends StatefulWidget {
   final bool embedded;
@@ -16,6 +19,34 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> {
   // Define colors and styles for consistency
   static const Color primaryColor = Color(0xFF10B981);
   static const Color pendingColor = Color(0xFF10B981);
+  
+  // Balance masking state
+  bool _balanceVisible = false; // Mask balance by default
+  Timer? _hideTimer;
+  
+  @override
+  void dispose() {
+    _hideTimer?.cancel();
+    super.dispose();
+  }
+  
+  void _toggleBalanceVisibility() {
+    setState(() {
+      _balanceVisible = !_balanceVisible;
+    });
+    
+    // Auto-hide after 10 seconds if visible
+    if (_balanceVisible) {
+      _hideTimer?.cancel();
+      _hideTimer = Timer(const Duration(seconds: 10), () {
+        if (mounted) {
+          setState(() {
+            _balanceVisible = false;
+          });
+        }
+      });
+    }
+  }
 
   // Dummy data for the transaction list
   final List<Map<String, dynamic>> _transactions = [
@@ -200,6 +231,9 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> {
   }
 
   Widget _buildWalletCard() {
+    final wallet = context.watch<WalletProvider>();
+    final balance = wallet.kesBalance;
+    
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 20),
       decoration: const BoxDecoration(
@@ -208,28 +242,69 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            "WALLET BALANCE (as of Now)",
-            style: TextStyle(color: Colors.white.withAlpha(204), fontSize: 14),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                "WALLET BALANCE (as of Now)",
+                style: TextStyle(color: Colors.white.withAlpha(204), fontSize: 14),
+              ),
+              // Toggle visibility icon
+              IconButton(
+                icon: Icon(
+                  _balanceVisible ? Icons.visibility_off : Icons.visibility,
+                  color: Colors.white,
+                  size: 22,
+                ),
+                onPressed: _toggleBalanceVisibility,
+                tooltip: _balanceVisible ? 'Hide balance (auto-hides in 10s)' : 'Show balance',
+              ),
+            ],
           ),
           const SizedBox(height: 10),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
-                "KES 12,500",
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 30,
-                  fontWeight: FontWeight.bold,
-                ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    _balanceVisible 
+                        ? "KES ${balance.toStringAsFixed(2)}"
+                        : "KES ••••••",
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 30,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: _balanceVisible ? 0 : 4,
+                    ),
+                  ),
+                  if (_balanceVisible) ...[
+                    const SizedBox(height: 4),
+                    Text(
+                      'Auto-hides in 10s',
+                      style: TextStyle(
+                        color: Colors.white.withOpacity(0.7),
+                        fontSize: 11,
+                      ),
+                    ),
+                  ],
+                ],
               ),
               Row(
                 children: [
-                  const Icon(Icons.qr_code_scanner, color: Colors.white),
-                  const SizedBox(width: 10),
+                  IconButton(
+                    icon: const Icon(Icons.qr_code_scanner, color: Colors.white, size: 28),
+                    onPressed: () {
+                      Navigator.pushNamed(context, '/qrScanner');
+                    },
+                    tooltip: 'Scan QR Code',
+                  ),
+                  const SizedBox(width: 4),
                   OutlinedButton(
-                    onPressed: () {},
+                    onPressed: () {
+                      Navigator.pushNamed(context, '/walletSettings');
+                    },
                     style: OutlinedButton.styleFrom(
                       foregroundColor: Colors.white,
                       side: BorderSide(color: Colors.white.withAlpha(128)),

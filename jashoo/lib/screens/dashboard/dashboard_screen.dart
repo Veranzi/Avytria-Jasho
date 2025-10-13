@@ -9,6 +9,9 @@ import 'package:fl_chart/fl_chart.dart';
 import '../../providers/jobs_provider.dart';
 import 'ai_assistant_screen.dart';
 import 'transactions.dart';
+import 'dart:async';
+import '../../widgets/voice_assistant_button.dart';
+import '../../widgets/voice_assistant_icon_button.dart';
 
 class DashBoardScreen extends StatefulWidget {
   const DashBoardScreen({super.key});
@@ -19,9 +22,35 @@ class DashBoardScreen extends StatefulWidget {
 
 class _DashBoardScreenState extends State<DashBoardScreen> {
   int _selectedIndex = 0;
+  bool _balanceVisible = false; // Mask balance by default
+  Timer? _hideTimer; // Timer for auto-hiding balance
 
   static const Color primaryColor = Color(0xFF10B981);
   static const Color lightBlueBackground = Color(0xFFE8F5E9);
+  
+  @override
+  void dispose() {
+    _hideTimer?.cancel();
+    super.dispose();
+  }
+  
+  void _toggleBalanceVisibility() {
+    setState(() {
+      _balanceVisible = !_balanceVisible;
+    });
+    
+    // Auto-hide after 10 seconds if visible
+    if (_balanceVisible) {
+      _hideTimer?.cancel();
+      _hideTimer = Timer(const Duration(seconds: 10), () {
+        if (mounted) {
+          setState(() {
+            _balanceVisible = false;
+          });
+        }
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -36,6 +65,7 @@ class _DashBoardScreenState extends State<DashBoardScreen> {
       drawer: const ProfileDrawer(),
       body: _buildBody(),
       bottomNavigationBar: _buildCustomBottomNavigationBar(),
+      floatingActionButton: const VoiceAssistantButton(), // Voice navigation for PWD users
     );
   }
 
@@ -55,6 +85,8 @@ class _DashBoardScreenState extends State<DashBoardScreen> {
         ],
       ),
       actions: [
+        // Voice navigation for PWD users
+        const VoiceAssistantIconButton(),
         IconButton(
           icon: const Icon(Icons.notifications, color: Colors.white),
           onPressed: () {
@@ -115,6 +147,10 @@ class _DashBoardScreenState extends State<DashBoardScreen> {
     final isKes = wallet.displayCurrency == Currency.kes;
     final balance = wallet.currentBalance;
     final label = wallet.getCurrencySymbol();
+    
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isSmallScreen = screenWidth < 700;
+    
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 20),
       decoration: const BoxDecoration(
@@ -127,54 +163,97 @@ class _DashBoardScreenState extends State<DashBoardScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text("Wallet Balance",
-              style: TextStyle(color: Colors.white.withAlpha(204), fontSize: 14)),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text("Wallet Balance",
+                  style: TextStyle(color: Colors.white.withAlpha(204), fontSize: 14)),
+              // Toggle visibility icon
+              IconButton(
+                icon: Icon(
+                  _balanceVisible ? Icons.visibility_off : Icons.visibility,
+                  color: Colors.white,
+                  size: isSmallScreen ? 20 : 22,
+                ),
+                onPressed: _toggleBalanceVisibility,
+                tooltip: _balanceVisible ? 'Hide balance (auto-hides in 10s)' : 'Show balance',
+              ),
+            ],
+          ),
           const SizedBox(height: 10),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
+              // Masked balance display
               Text(
-                "$label ${balance.toStringAsFixed(isKes ? 0 : 2)}",
-                style: const TextStyle(
+                _balanceVisible 
+                    ? "$label ${balance.toStringAsFixed(isKes ? 0 : 2)}"
+                    : "$label ••••••",
+                style: TextStyle(
                     color: Colors.white,
-                    fontSize: 28,
-                    fontWeight: FontWeight.bold),
+                    fontSize: isSmallScreen ? 24 : 28,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: _balanceVisible ? 0 : 4),
               ),
-              Row(
-                children: [
-                  OutlinedButton(
-                    onPressed: wallet.toggleCurrency,
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: Colors.white,
-                      side: BorderSide(color: Colors.white.withAlpha(128)),
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(20)),
+              Flexible(
+                child: Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  alignment: WrapAlignment.end,
+                  children: [
+                    OutlinedButton(
+                      onPressed: wallet.toggleCurrency,
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: Colors.white,
+                        side: BorderSide(color: Colors.white.withAlpha(128)),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(20)),
+                        padding: EdgeInsets.symmetric(
+                          horizontal: isSmallScreen ? 10 : 12,
+                          vertical: isSmallScreen ? 6 : 8,
+                        ),
+                      ),
+                      child: Text(
+                        isKes ? 'SHOW USDT' : 'SHOW KES',
+                        style: TextStyle(fontSize: isSmallScreen ? 10 : 12),
+                      ),
                     ),
-                    child: Text(isKes ? 'SHOW USDT' : 'SHOW KES'),
-                  ),
-                  const SizedBox(width: 8),
-                  OutlinedButton(
-                    onPressed: () => Navigator.pushNamed(context, '/deposit'),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: Colors.white,
-                      side: BorderSide(color: Colors.white.withAlpha(128)),
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(20)),
+                    OutlinedButton(
+                      onPressed: () => Navigator.pushNamed(context, '/deposit'),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: Colors.white,
+                        side: BorderSide(color: Colors.white.withAlpha(128)),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(20)),
+                        padding: EdgeInsets.symmetric(
+                          horizontal: isSmallScreen ? 10 : 12,
+                          vertical: isSmallScreen ? 6 : 8,
+                        ),
+                      ),
+                      child: Text(
+                        "DEPOSIT",
+                        style: TextStyle(fontSize: isSmallScreen ? 10 : 12),
+                      ),
                     ),
-                    child: const Text("DEPOSIT"),
-                  ),
-                  const SizedBox(width: 8),
-                  OutlinedButton(
-                    onPressed: () => Navigator.pushNamed(context, '/withdraw'),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: Colors.white,
-                      side: BorderSide(color: Colors.white.withAlpha(128)),
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(20)),
+                    OutlinedButton(
+                      onPressed: () => Navigator.pushNamed(context, '/withdraw'),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: Colors.white,
+                        side: BorderSide(color: Colors.white.withAlpha(128)),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(20)),
+                        padding: EdgeInsets.symmetric(
+                          horizontal: isSmallScreen ? 10 : 12,
+                          vertical: isSmallScreen ? 6 : 8,
+                        ),
+                      ),
+                      child: Text(
+                        "WITHDRAW",
+                        style: TextStyle(fontSize: isSmallScreen ? 10 : 12),
+                      ),
                     ),
-                    child: const Text("WITHDRAW"),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ],
           ),
@@ -185,8 +264,20 @@ class _DashBoardScreenState extends State<DashBoardScreen> {
               color: Colors.white.withAlpha(51),
               borderRadius: BorderRadius.circular(8),
             ),
-            child: const Text("Flat commission discounts available",
-                style: TextStyle(color: Colors.white, fontSize: 12)),
+            child: Row(
+              children: [
+                Icon(Icons.lock_outline, color: Colors.white, size: isSmallScreen ? 14 : 16),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    !_balanceVisible 
+                        ? "Tap eye icon to reveal balance"
+                        : "Flat commission discounts available",
+                    style: TextStyle(color: Colors.white, fontSize: isSmallScreen ? 11 : 12),
+                  ),
+                ),
+              ],
+            ),
           )
         ],
       ),
