@@ -4,6 +4,7 @@ import 'dart:async';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
 import 'package:flutter_tts/flutter_tts.dart';
 import 'package:permission_handler/permission_handler.dart';
+import '../../services/pwd_service.dart';
 
 class WelcomeScreen extends StatefulWidget {
   const WelcomeScreen({super.key});
@@ -23,6 +24,9 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
   bool _speechEnabled = false;
   bool _isListening = false;
   bool _hasAnnounced = false;
+  bool _isPWDMode = false;
+  bool _hasAskedForVoiceAssistance = false;
+  bool _voiceAssistanceActive = false;
 
   // Images and their corresponding messages (2 lines each)
   final List<Map<String, dynamic>> _slides = [
@@ -52,7 +56,98 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
   void initState() {
     super.initState();
     _startAutoSlide();
+    _checkPWDMode();
     _initVoiceNavigation();
+  }
+  
+  Future<void> _checkPWDMode() async {
+    final isPWD = await PWDService.isPWDModeEnabled();
+    setState(() {
+      _isPWDMode = isPWD;
+      _voiceAssistanceActive = isPWD; // If already enabled, keep it active
+    });
+    
+    // If not already in PWD mode, ask if they need voice assistance
+    if (!isPWD && !_hasAskedForVoiceAssistance) {
+      await _askForVoiceAssistance();
+    }
+  }
+  
+  Future<void> _askForVoiceAssistance() async {
+    setState(() {
+      _hasAskedForVoiceAssistance = true;
+    });
+    
+    // Wait a moment for the screen to settle
+    await Future.delayed(const Duration(seconds: 2));
+    
+    // Ask the question
+    await _tts.speak(
+      "Welcome to Jasho. Do you need voice assistance to navigate this app? Say yes to enable voice guidance, or say no to use the app normally."
+    );
+    
+    // Wait for TTS to finish
+    await Future.delayed(const Duration(seconds: 8));
+    
+    // Start listening for yes/no response
+    _listenForVoiceAssistanceResponse();
+  }
+  
+  Future<void> _listenForVoiceAssistanceResponse() async {
+    final micStatus = await Permission.microphone.status;
+    
+    if (!micStatus.isGranted) {
+      final result = await Permission.microphone.request();
+      if (!result.isGranted) {
+        // Can't use voice without mic permission
+        return;
+      }
+    }
+    
+    if (!_speechEnabled) {
+      _speechEnabled = await _speech.initialize(
+        onError: (error) => print('Speech error: $error'),
+      );
+    }
+    
+    if (_speechEnabled && mounted) {
+      setState(() => _isListening = true);
+      
+      _speech.listen(
+        onResult: (result) async {
+          final words = result.recognizedWords.toLowerCase();
+          
+          if (words.contains('yes') || words.contains('ndio') || words.contains('yeah') || words.contains('sure')) {
+            // User wants voice assistance
+            _speech.stop();
+            setState(() {
+              _isListening = false;
+              _voiceAssistanceActive = true;
+            });
+            
+            await PWDService.enablePWDMode();
+            await _tts.speak("Voice assistance activated. Say 'sign up' to create a new account, or say 'log in' to access your existing account.");
+            
+            // Start continuous listening for commands
+            await Future.delayed(const Duration(seconds: 5));
+            _startVoiceListener();
+            
+          } else if (words.contains('no') || words.contains('hapana') || words.contains('nope')) {
+            // User doesn't want voice assistance
+            _speech.stop();
+            setState(() {
+              _isListening = false;
+              _voiceAssistanceActive = false;
+            });
+            
+            await _tts.speak("Okay. You can use the app by tapping the buttons on screen. If you need voice assistance later, tap the microphone button at the top right.");
+            
+          }
+        },
+        listenFor: const Duration(seconds: 10),
+        pauseFor: const Duration(seconds: 3),
+      );
+    }
   }
   
   Future<void> _initVoiceNavigation() async {
@@ -132,7 +227,10 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
     );
   }
   
-  void _processVoiceCommand(String command) {
+  Future<void> _processVoiceCommand(String command) async {
+    // Only process commands if voice assistance is active
+    if (!_voiceAssistanceActive) return;
+    
     // Log in commands (English & Swahili)
     if (command.contains('log in') || 
         command.contains('login') || 
@@ -140,7 +238,8 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
         command.contains('signin') ||
         command.contains('ingia') || // Swahili: enter/login
         command.contains('weka sahihi')) { // Swahili: sign in
-      _tts.speak('Navigating to login');
+      await _tts.speak('Taking you to login');
+      await PWDService.enablePWDMode(); // Keep voice active on login page
       Navigator.pushNamed(context, '/login');
     }
     
@@ -154,7 +253,9 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
              command.contains('anza') || // Swahili: start
              command.contains('jiandikishe') || // Swahili: register
              command.contains('fungua akaunti')) { // Swahili: open account
-      _tts.speak('Navigating to sign up');
+      await _tts.speak('Taking you to sign up. I will guide you through creating your account with voice.');
+      // Enable PWD mode for voice-guided signup
+      await PWDService.enablePWDMode();
       Navigator.pushNamed(context, '/signup');
     }
     
@@ -490,6 +591,104 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                       ),
                     ),
                   ),
+                ),
+              ),
+              
+              // Voice Control Buttons (Top Right Corner) - ALWAYS VISIBLE for PWD accessibility
+              Positioned(
+                top: MediaQuery.of(context).padding.top + 16,
+                right: 16,
+                child: Row(
+                  children: [
+                    // Speaker Button (Text-to-Speech) - For PWD users
+                    Container(
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.9),
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.2),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                      child: IconButton(
+                        icon: const Icon(Icons.volume_up, color: Color(0xFF10B981)),
+                        iconSize: 28,
+                        onPressed: () async {
+                          // ALWAYS WORKS - PWD users need this to know what's on screen!
+                          await _announceScreen();
+                        },
+                        tooltip: 'Hear screen content',
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    
+                    // Microphone Button (Speech-to-Text) - For PWD users
+                    Container(
+                      decoration: BoxDecoration(
+                        color: _isListening 
+                            ? const Color(0xFF10B981) 
+                            : Colors.white.withOpacity(0.9),
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.2),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: IconButton(
+                        icon: Icon(
+                          _isListening ? Icons.mic : Icons.mic_none,
+                          color: _isListening ? Colors.white : const Color(0xFF10B981),
+                        ),
+                        iconSize: 28,
+                        onPressed: () async {
+                          // ALWAYS WORKS - PWD users need this to navigate!
+                          if (_isListening) {
+                            // Stop listening
+                            _speech.stop();
+                            setState(() => _isListening = false);
+                          } else {
+                            // Request permission and start listening
+                            final micStatus = await Permission.microphone.request();
+                            if (micStatus.isGranted) {
+                              if (!_speechEnabled) {
+                                _speechEnabled = await _speech.initialize(
+                                  onError: (error) => print('Speech error: $error'),
+                                  onStatus: (status) {
+                                    if (status == 'done' && mounted) {
+                                      setState(() => _isListening = false);
+                                      Future.delayed(const Duration(milliseconds: 500), () {
+                                        if (mounted) _startVoiceListener();
+                                      });
+                                    }
+                                  },
+                                );
+                              }
+                              if (_speechEnabled) {
+                                _startVoiceListener();
+                              }
+                            } else {
+                              // Show permission denied message
+                              if (mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text('Microphone permission is required for voice navigation'),
+                                    backgroundColor: Colors.red,
+                                  ),
+                                );
+                              }
+                            }
+                          }
+                        },
+                        tooltip: _isListening ? 'Listening...' : 'Voice commands',
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],

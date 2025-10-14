@@ -30,7 +30,41 @@ if not firebase_admin._apps:
 
 
 def create_app() -> FastAPI:
-    app = FastAPI(title=settings.app_name)
+    app = FastAPI(
+        title=settings.app_name,
+        description="Jashoo API - Financial Inclusion Platform",
+        version="1.0.0",
+        swagger_ui_parameters={
+            "persistAuthorization": True  # Remember auth token across page refreshes
+        }
+    )
+    
+    # Add security scheme for Swagger UI (enables the Authorize button)
+    from fastapi.openapi.utils import get_openapi
+    
+    def custom_openapi():
+        if app.openapi_schema:
+            return app.openapi_schema
+        openapi_schema = get_openapi(
+            title=app.title,
+            version=app.version,
+            description=app.description,
+            routes=app.routes,
+        )
+        openapi_schema["components"]["securitySchemes"] = {
+            "BearerAuth": {
+                "type": "http",
+                "scheme": "bearer",
+                "bearerFormat": "JWT",
+                "description": "Enter your JWT token (e.g., from /api/auth/login response)"
+            }
+        }
+        # Apply security globally to all endpoints (can be overridden per endpoint)
+        openapi_schema["security"] = [{"BearerAuth": []}]
+        app.openapi_schema = openapi_schema
+        return app.openapi_schema
+    
+    app.openapi = custom_openapi
 
     # Configure CORS to allow all origins (including Flutter app)
     app.add_middleware(
