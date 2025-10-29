@@ -462,3 +462,5 @@ Your Jasho app now has **world-class voice-controlled permissions** that work li
 *Accessibility: AAA Level*
 
 
+
+

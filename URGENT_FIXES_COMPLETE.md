@@ -300,3 +300,5 @@ bool _balanceVisible = false; // EXPLICITLY FALSE ✅
 *Security: MAXIMUM*
 
 
+
+

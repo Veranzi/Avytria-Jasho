@@ -139,3 +139,5 @@
 "Every person, regardless of ability, deserves financial freedom. Jasho isn't just an app - it's a movement for financial dignity in Africa."
 
 
+
+

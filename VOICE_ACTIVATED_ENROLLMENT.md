@@ -482,3 +482,5 @@ App: "Which enrollment? Say 'enroll voice' or 'enroll face'"
 *Jasho = Future of Accessible FinTech*
 
 
+
+

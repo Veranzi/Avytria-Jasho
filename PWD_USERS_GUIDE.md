@@ -351,3 +351,5 @@ Jasho is designed for YOU. Every feature, every screen, every action is accessib
 *Jasho - Banking that speaks your language, literally.* 🇰🇪
 
 
+
+
