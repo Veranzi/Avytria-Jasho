@@ -3,7 +3,7 @@ services:
     name: jashoo-node-backend
     env: node
     rootDir: jashoo-backend
-    plan: starter
+    plan: free
     autoDeploy: true
     buildCommand: npm ci
     startCommand: node server.js
@@ -29,7 +29,7 @@ services:
     name: jashoo-python-backend
     env: python
     rootDir: python-backend
-    plan: starter
+    plan: free
     autoDeploy: true
     buildCommand: pip install -r requirements.txt
     startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
