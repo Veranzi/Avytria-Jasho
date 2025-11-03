@@ -1,0 +1,73 @@
+services:
+  - type: web
+    name: jashoo-node-backend
+    env: node
+    rootDir: jashoo-backend
+    plan: starter
+    autoDeploy: true
+    buildCommand: npm ci
+    startCommand: node server.js
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: NODE_VERSION
+        value: 18
+      # Secrets: set these in Render dashboard or via blueprint secrets
+      - key: JWT_SECRET
+        generateValue: true
+      - key: SESSION_SECRET
+        generateValue: true
+      - key: BALANCE_ENCRYPTION_KEY
+        generateValue: true
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: FIREBASE_STORAGE_BUCKET
+        sync: false
+      - key: GOOGLE_APPLICATION_CREDENTIALS
+        value: /etc/secrets/service-account.json
+    secretFiles:
+      - path: /etc/secrets/service-account.json
+        # Upload your Firebase service account JSON in the Render dashboard
+        # or via blueprint secrets; contents are not stored in repo
+        envVar: FIREBASE_SERVICE_ACCOUNT_JSON
+
+  - type: web
+    name: jashoo-python-backend
+    env: python
+    rootDir: python-backend
+    plan: starter
+    autoDeploy: true
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11
+      - key: ENV
+        value: production
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: FIREBASE_STORAGE_BUCKET
+        sync: false
+      - key: GOOGLE_APPLICATION_CREDENTIALS
+        value: /etc/secrets/service-account.json
+      - key: JASHOO_API_PREFIX
+        value: /api
+      - key: JASHOO_JWT_SECRET
+        generateValue: true
+    secretFiles:
+      - path: /etc/secrets/service-account.json
+        envVar: FIREBASE_SERVICE_ACCOUNT_JSON
+
+# Optional: define a static site for Flutter Web if you build it later
+# staticSites:
+#   - name: jashoo-web
+#     rootDir: jashoo
+#     buildCommand: flutter build web --release
+#     publishPath: build/web
+#     headers:
+#       - path: /
+#         name: Access-Control-Allow-Origin
+#         value: "*"
+
