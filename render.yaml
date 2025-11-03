@@ -20,17 +20,10 @@ services:
         generateValue: true
       - key: BALANCE_ENCRYPTION_KEY
         generateValue: true
-      - key: OPENAI_API_KEY
-        sync: false
-      - key: FIREBASE_STORAGE_BUCKET
-        sync: false
-      - key: GOOGLE_APPLICATION_CREDENTIALS
-        value: /etc/secrets/service-account.json
-    secretFiles:
-      - path: /etc/secrets/service-account.json
-        # Upload your Firebase service account JSON in the Render dashboard
-        # or via blueprint secrets; contents are not stored in repo
-        envVar: FIREBASE_SERVICE_ACCOUNT_JSON
+      # NOTE: Add these three in the Render dashboard after create:
+      # - OPENAI_API_KEY
+      # - FIREBASE_STORAGE_BUCKET
+      # - GOOGLE_APPLICATION_CREDENTIALS=/etc/secrets/service-account.json
 
   - type: web
     name: jashoo-python-backend
@@ -46,19 +39,14 @@ services:
         value: 3.11
       - key: ENV
         value: production
-      - key: OPENAI_API_KEY
-        sync: false
-      - key: FIREBASE_STORAGE_BUCKET
-        sync: false
-      - key: GOOGLE_APPLICATION_CREDENTIALS
-        value: /etc/secrets/service-account.json
       - key: JASHOO_API_PREFIX
         value: /api
       - key: JASHOO_JWT_SECRET
         generateValue: true
-    secretFiles:
-      - path: /etc/secrets/service-account.json
-        envVar: FIREBASE_SERVICE_ACCOUNT_JSON
+      # NOTE: Add these three in the Render dashboard after create:
+      # - OPENAI_API_KEY
+      # - FIREBASE_STORAGE_BUCKET
+      # - GOOGLE_APPLICATION_CREDENTIALS=/etc/secrets/service-account.json
 
 # Optional: define a static site for Flutter Web if you build it later
 # staticSites:
