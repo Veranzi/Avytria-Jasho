@@ -1,31 +1,5 @@
 services:
   - type: web
-    name: jashoo-node-backend
-    env: node
-    rootDir: jashoo-backend
-    plan: free
-    autoDeploy: true
-    buildCommand: npm ci
-    startCommand: node server.js
-    healthCheckPath: /health
-    envVars:
-      - key: NODE_ENV
-        value: production
-      - key: NODE_VERSION
-        value: 18
-      # Secrets: set these in Render dashboard or via blueprint secrets
-      - key: JWT_SECRET
-        generateValue: true
-      - key: SESSION_SECRET
-        generateValue: true
-      - key: BALANCE_ENCRYPTION_KEY
-        generateValue: true
-      # NOTE: Add these three in the Render dashboard after create:
-      # - OPENAI_API_KEY
-      # - FIREBASE_STORAGE_BUCKET
-      # - GOOGLE_APPLICATION_CREDENTIALS=/etc/secrets/service-account.json
-
-  - type: web
     name: jashoo-python-backend
     env: python
     rootDir: python-backend
